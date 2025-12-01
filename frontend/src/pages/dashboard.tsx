@@ -79,8 +79,10 @@ export default function Dashboard() {
       try {
         const headers = { 'Authorization': `Bearer ${token}` };
         
+        const API_URL = import.meta.env.VITE_API_URL || "";
+        
         // Fetch User
-        const userRes = await fetch('/api/auth/me', { headers });
+        const userRes = await fetch(`${API_URL}/api/auth/me`, { headers });
         if (userRes.ok) {
           const userData = await userRes.json();
           setUser(userData);
@@ -93,7 +95,7 @@ export default function Dashboard() {
         }
 
         // Fetch Transactions
-        const transRes = await fetch('/api/transactions', { headers });
+        const transRes = await fetch(`${API_URL}/api/transactions`, { headers });
         if (transRes.ok) {
           const transData = await transRes.json();
           const formattedTrans = transData.map((t: any) => ({
@@ -115,8 +117,9 @@ export default function Dashboard() {
 
   const updateCategoriesOnServer = async (newCategories: string[]) => {
     const token = localStorage.getItem('token');
+    const API_URL = import.meta.env.VITE_API_URL || "";
     try {
-      await fetch('/api/auth/categories', {
+      await fetch(`${API_URL}/api/auth/categories`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -165,8 +168,9 @@ export default function Dashboard() {
     }
 
     const token = localStorage.getItem('token');
+    const API_URL = import.meta.env.VITE_API_URL || "";
     try {
-      const res = await fetch('/api/transactions', {
+      const res = await fetch(`${API_URL}/api/transactions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -194,8 +198,9 @@ export default function Dashboard() {
 
   const handleDeleteTransaction = async (id: string) => {
     const token = localStorage.getItem('token');
+    const API_URL = import.meta.env.VITE_API_URL || "";
     try {
-      await fetch(`/api/transactions/${id}`, {
+      await fetch(`${API_URL}/api/transactions/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

@@ -36,7 +36,8 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    const url = isLogin ? "/api/auth/login" : "/api/auth/register";
+    const API_URL = import.meta.env.VITE_API_URL || "";
+    const url = isLogin ? `${API_URL}/api/auth/login` : `${API_URL}/api/auth/register`;
     const body = isLogin
       ? { email: formData.email, password: formData.password }
       : formData;
