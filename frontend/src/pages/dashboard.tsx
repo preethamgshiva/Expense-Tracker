@@ -57,6 +57,7 @@ import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, CreditCard, DollarSig
 export default function Dashboard() {
   // Dashboard Component
   const navigate = useNavigate();
+  const PieAny = Pie as any;
   const [open, setOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -927,8 +928,7 @@ export default function Dashboard() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
-                    {/* @ts-ignore */}
-                    <Pie
+                    <PieAny
                       activeIndex={activeIndex}
                       activeShape={renderActiveShape}
                       data={categoryData}
@@ -944,7 +944,7 @@ export default function Dashboard() {
                       {categoryData.map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
                       ))}
-                    </Pie>
+                    </PieAny>
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
