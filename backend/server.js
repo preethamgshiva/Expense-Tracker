@@ -12,6 +12,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Request Logger
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    console.log('Origin:', req.headers.origin);
+    next();
+});
+
 app.get('/', (req, res) => {
     res.send('API is running...');
 });
