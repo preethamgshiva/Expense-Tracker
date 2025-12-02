@@ -9,7 +9,24 @@ connectDB();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: '*', // Allow all origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true // Note: If using '*', credentials might need to be false or specific origin set. For now, let's try strict configuration if * fails, but usually for * credentials must be false. 
+    // Actually, let's use a safer approach for Vercel:
+}));
+
+// Better CORS for debugging
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    if (req.method === 'OPTIONS') {
+        res.header("Access-Control-Allow-Methods", "PUT, POST, PATCH, DELETE, GET");
+        return res.status(200).json({});
+    }
+    next();
+});
 app.use(express.json());
 
 // Request Logger
