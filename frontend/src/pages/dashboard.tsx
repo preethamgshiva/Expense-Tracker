@@ -927,6 +927,7 @@ export default function Dashboard() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
+                    {/* @ts-ignore */}
                     <Pie
                       activeIndex={activeIndex}
                       activeShape={renderActiveShape}
