@@ -1022,7 +1022,7 @@ export default function Dashboard() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDeleteTransaction(transaction._id)}
-                        className="h-8 w-8 text-muted-foreground hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="h-8 w-8 text-muted-foreground hover:text-red-600 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
