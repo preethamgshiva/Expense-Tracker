@@ -57,7 +57,8 @@ import {
 } from "../components/ui/select";
 import {
   ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, CreditCard, DollarSign, Plus, Settings, User, Trash2, Edit2, Check, X, LogOut, Download, ChevronLeft, ChevronRight, FileText, Calendar as CalendarIcon, LayoutDashboard
-} from "lucide-react";
+, Camera, Loader2 } from "lucide-react";
+import { createWorker } from 'tesseract.js';
 
 export default function Dashboard() {
   // Dashboard Component
@@ -73,6 +74,89 @@ export default function Dashboard() {
   const [frequency, setFrequency] = useState('monthly');
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scanning, setScanning] = useState(false);
+
+  const handleScanReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setScanning(true);
+    try {
+      const worker = await createWorker('eng');
+      const ret = await worker.recognize(file);
+      await worker.terminate();
+      
+      const text = ret.data.text;
+      
+      // Basic heuristic parsing
+      let extractedAmount = "";
+      let extractedDate = new Date();
+      
+      // Amount: Find max currency-like number
+      const allNumbers = text.match(/\d+[.,]\d{2}/g);
+      if (allNumbers) {
+         const maxVal = allNumbers.reduce((max, curr) => {
+             const val = parseFloat(curr.replace(/[^0-9.]/g, ''));
+             return val > max ? val : max;
+         }, 0);
+         extractedAmount = maxVal.toString();
+      }
+      
+      console.log("OCR Text:", text); // Debugging
+      
+      // Date Parsing Strategy
+      let foundDate = false;
+      
+      // 1. Try to find date next to "Date" keyword
+      const labeledDateRegex = /(?:Date|Dt)\s*[:|]?\s*(\d{1,2}[\s.-/]+\d{1,2}[\s.-/]+\d{2,4})/i;
+      const labeledMatch = text.match(labeledDateRegex);
+      if (labeledMatch) {
+          const cleanDateStr = labeledMatch[1].replace(/\s*([./-])\s*/g, '$1');
+          const d = new Date(cleanDateStr);
+          if (!isNaN(d.getTime())) {
+              extractedDate = d;
+              foundDate = true;
+          }
+      }
+
+      // 2. If no labeled date, find any valid date
+      if (!foundDate) {
+        const numericDateRegex = /\b(\d{1,2}[\s.-/]+\d{1,2}[\s.-/]+\d{2,4})\b/g;
+        const textDateRegex = /\b(?:\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{2,4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{2,4})\b/gi;
+        
+        const dateMatches = [...(text.match(numericDateRegex) || []), ...(text.match(textDateRegex) || [])];
+        
+        for (const match of dateMatches) {
+            const cleanDateStr = match.replace(/\s*([./-])\s*/g, '$1').replace(/,/g, '');
+            const d = new Date(cleanDateStr);
+            if (!isNaN(d.getTime())) {
+                const diff = Math.abs(new Date().getTime() - d.getTime());
+                const fiftyYears = 1000 * 60 * 60 * 24 * 365 * 50;
+                if (diff < fiftyYears) {
+                    extractedDate = d;
+                    break;
+                }
+            }
+        }
+      }
+      
+      setFormData({
+          name: "Scanned Receipt",
+          amount: extractedAmount ? extractedAmount : "",
+          category: "Other",
+          type: "expense",
+          date: extractedDate.toISOString().split('T')[0]
+      });
+      setOpen(true); // Open Dialog
+    } catch (err) {
+      console.error(err);
+      alert("Failed to scan receipt. Please try again.");
+    } finally {
+      setScanning(false);
+      // Reset input
+      e.target.value = '';
+    }
+  };
   
   const [editingCategory, setEditingCategory] = useState<{index: number, value: string} | null>(null);
   const [newCategory, setNewCategory] = useState("");
@@ -643,6 +727,22 @@ export default function Dashboard() {
               <span className="hidden md:inline">Calendar</span>
             </Button>
           </div>
+          
+          {/* Scan Receipt */}
+          <input 
+            type="file" 
+            accept="image/*" 
+            id="scan-receipt" 
+            className="hidden" 
+            onChange={handleScanReceipt} 
+            disabled={scanning}
+          />
+          <label htmlFor="scan-receipt">
+            <div className={`inline-flex items-center justify-center rounded-full w-9 h-9 hover:bg-primary/10 transition-colors cursor-pointer ${scanning ? 'opacity-50' : ''}`} title="Scan Bill">
+                {scanning ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Camera className="h-5 w-5 text-muted-foreground" />}
+            </div>
+          </label>
+
           <Button variant="ghost" size="icon" onClick={handleExportCSV} className="rounded-full hover:bg-primary/10 transition-colors" title="Export CSV">
             <FileText className="h-5 w-5 text-muted-foreground" />
           </Button>
