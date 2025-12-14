@@ -104,6 +104,29 @@ export default function Dashboard() {
 
 
 
+  const fetchTransactions = async () => {
+    const token = localStorage.getItem('token');
+    const API_URL = import.meta.env.VITE_API_URL || "";
+    if (!token) return;
+
+    try {
+      const transRes = await fetch(`${API_URL}/api/transactions`, { 
+        headers: { 'Authorization': `Bearer ${token}` } 
+      });
+      if (transRes.ok) {
+        const transData = await transRes.json();
+        const formattedTrans = transData.map((t: any) => ({
+          ...t,
+          date: new Date(t.date),
+          timestamp: new Date(t.date)
+        }));
+        setTransactions(formattedTrans);
+      }
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -111,11 +134,10 @@ export default function Dashboard() {
       return;
     }
 
-    const fetchData = async () => {
+    const initializeData = async () => {
       try {
-        const headers = { 'Authorization': `Bearer ${token}` };
-        
         const API_URL = import.meta.env.VITE_API_URL || "";
+        const headers = { 'Authorization': `Bearer ${token}` };
         
         // Fetch User
         const userRes = await fetch(`${API_URL}/api/auth/me`, { headers });
@@ -124,31 +146,22 @@ export default function Dashboard() {
           setUser(userData);
           setCategories(userData.categories || []);
         } else {
-          // If token is invalid, redirect to login
           localStorage.removeItem('token');
           navigate('/login');
           return;
         }
 
         // Fetch Transactions
-        const transRes = await fetch(`${API_URL}/api/transactions`, { headers });
-        if (transRes.ok) {
-          const transData = await transRes.json();
-          const formattedTrans = transData.map((t: any) => ({
-            ...t,
-            date: new Date(t.date),
-            timestamp: new Date(t.date)
-          }));
-          setTransactions(formattedTrans);
-        }
+        await fetchTransactions();
+        
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error initializing:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    initializeData();
   }, [navigate]);
 
   const updateCategoriesOnServer = async (newCategories: string[]) => {
