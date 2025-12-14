@@ -902,7 +902,7 @@ export default function Dashboard() {
                     hasIncome: { position: 'relative' }
                   }}
                   components={{
-                    DayContent: (props) => {
+                    DayContent: (props: any) => {
                        const { date } = props;
                        const dayTransactions = transactions.filter(t => new Date(t.date).toDateString() === date.toDateString());
                        const hasExpense = dayTransactions.some(t => t.type === 'expense');
@@ -918,7 +918,7 @@ export default function Dashboard() {
                           </div>
                        );
                     }
-                  }}
+                  } as any}
                 />
               </CardContent>
             </Card>
