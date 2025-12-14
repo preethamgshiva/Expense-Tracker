@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { motion } from "framer-motion";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/style.css";
+import { format } from "date-fns";
 import {
   Card,
   CardContent,
@@ -52,7 +55,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, CreditCard, DollarSign, Plus, Settings, User, Trash2, Edit2, Check, X, LogOut, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, CreditCard, DollarSign, Plus, Settings, User, Trash2, Edit2, Check, X, LogOut, Download, ChevronLeft, ChevronRight, FileText, Calendar as CalendarIcon, LayoutDashboard
+} from "lucide-react";
 
 export default function Dashboard() {
   // Dashboard Component
@@ -62,6 +67,8 @@ export default function Dashboard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [categories, setCategories] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'dashboard' | 'calendar'>('dashboard');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -279,6 +286,30 @@ export default function Dashboard() {
     });
 
     doc.save("expense-report.pdf");
+  };
+
+  const handleExportCSV = () => {
+    const headers = ["Date", "Name", "Category", "Type", "Amount"];
+    const csvContent = [
+      headers.join(","),
+      ...transactions.map(t => [
+        new Date(t.date).toLocaleDateString(),
+        `"${t.name}"`, 
+        t.category,
+        t.type,
+        t.type === 'expense' ? -Math.abs(t.amount) : t.amount
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `expenses_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const totalIncome = transactions.reduce((sum, t) => t.type === 'income' ? sum + t.amount : sum, 0);
@@ -550,6 +581,29 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex bg-muted/50 p-1 rounded-lg border border-border mr-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setViewMode('dashboard')} 
+              className={`h-8 px-2 rounded-md transition-all ${viewMode === 'dashboard' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <LayoutDashboard className="h-4 w-4 mr-1" />
+              <span className="hidden md:inline">Dashboard</span>
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setViewMode('calendar')} 
+              className={`h-8 px-2 rounded-md transition-all ${viewMode === 'calendar' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <CalendarIcon className="h-4 w-4 mr-1" />
+              <span className="hidden md:inline">Calendar</span>
+            </Button>
+          </div>
+          <Button variant="ghost" size="icon" onClick={handleExportCSV} className="rounded-full hover:bg-primary/10 transition-colors" title="Export CSV">
+            <FileText className="h-5 w-5 text-muted-foreground" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={handleDownloadPDF} className="rounded-full hover:bg-primary/10 transition-colors" title="Download Report">
             <Download className="h-5 w-5 text-muted-foreground" />
           </Button>
@@ -801,6 +855,113 @@ export default function Dashboard() {
           </Dialog>
         </div>
 
+        {viewMode === 'calendar' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-1 md:grid-cols-12 gap-6"
+          >
+             <Card className="md:col-span-8 glass-card">
+              <CardHeader>
+                <CardTitle>Transaction Calendar</CardTitle>
+                <CardDescription>View your spending by date</CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-center p-6">
+                <style>{`
+                  .rdp {
+                    --rdp-cell-size: 50px;
+                    --rdp-accent-color: var(--primary);
+                    --rdp-background-color: var(--primary-foreground);
+                    margin: 0;
+                  }
+                  .rdp-day_selected { 
+                    background-color: var(--primary); 
+                    color: white;
+                  }
+                  .rdp-day_today { 
+                    font-weight: bold; 
+                    border: 2px solid var(--primary);
+                  }
+                  .dot-indicator {
+                    width: 6px;
+                    height: 6px;
+                    border-radius: 50%;
+                    margin: 2px auto 0;
+                  }
+                `}</style>
+                <DayPicker
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  modifiers={{
+                    hasExpense: (date) => transactions.some(t => new Date(t.date).toDateString() === date.toDateString() && t.type === 'expense'),
+                    hasIncome: (date) => transactions.some(t => new Date(t.date).toDateString() === date.toDateString() && t.type === 'income')
+                  }}
+                  modifiersStyles={{
+                    hasExpense: { position: 'relative' },
+                    hasIncome: { position: 'relative' }
+                  }}
+                  components={{
+                    DayContent: (props) => {
+                       const { date } = props;
+                       const dayTransactions = transactions.filter(t => new Date(t.date).toDateString() === date.toDateString());
+                       const hasExpense = dayTransactions.some(t => t.type === 'expense');
+                       const hasIncome = dayTransactions.some(t => t.type === 'income');
+                       
+                       return (
+                          <div className="flex flex-col items-center justify-center h-full w-full relative p-2 text-sm z-10">
+                            <span>{date.getDate()}</span>
+                            <div className="flex gap-0.5 absolute bottom-1">
+                              {hasIncome && <div className="h-1.5 w-1.5 rounded-full bg-green-500" />}
+                              {hasExpense && <div className="h-1.5 w-1.5 rounded-full bg-red-500" />}
+                            </div>
+                          </div>
+                       );
+                    }
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="md:col-span-4 glass-card h-fit sticky top-24">
+              <CardHeader>
+                <CardTitle>{selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a Date'}</CardTitle>
+                <CardDescription>Transactions for this day</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                  {selectedDate && transactions.filter(t => new Date(t.date).toDateString() === selectedDate.toDateString()).length > 0 ? (
+                    transactions.filter(t => new Date(t.date).toDateString() === selectedDate.toDateString()).map((t, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                            {t.type === 'income' ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm truncate max-w-[100px]">{t.name}</p>
+                            <p className="text-xs text-muted-foreground">{t.category}</p>
+                          </div>
+                        </div>
+                        <span className={`font-bold whitespace-nowrap ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                          {t.type === 'income' ? '+' : '-'}₹{Math.abs(t.amount)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-10 text-muted-foreground">
+                      <CalendarIcon className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                      <p>No transactions on this date</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {viewMode === 'dashboard' && (
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+
         {/* Stats Cards - Desktop Grid */}
         <div className="hidden md:grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {statsCards.map((stat, index) => (
@@ -960,6 +1121,57 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
+        {/* Deep Insights */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+           <Card className="glass-card">
+              <CardHeader className="pb-2">
+                 <CardTitle className="text-sm font-medium text-muted-foreground">Top Spending Category</CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="text-2xl font-bold text-primary">
+                    {categoryData.length > 0 
+                      ? categoryData.reduce((prev: any, current: any) => (prev.value > current.value) ? prev : current).name 
+                      : "N/A"}
+                 </div>
+                 <p className="text-xs text-muted-foreground mt-1">
+                    Highest expense category
+                 </p>
+              </CardContent>
+           </Card>
+
+           <Card className="glass-card">
+              <CardHeader className="pb-2">
+                 <CardTitle className="text-sm font-medium text-muted-foreground">Largest Single Expense</CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="text-2xl font-bold truncate text-red-500">
+                    {transactions.filter(t => t.type === 'expense').length > 0
+                      ? transactions.filter(t => t.type === 'expense').reduce((max, t) => Math.abs(t.amount) > Math.abs(max.amount) ? t : max).name
+                      : "N/A"}
+                 </div>
+                 <p className="text-xs text-muted-foreground mt-1">
+                   {transactions.filter(t => t.type === 'expense').length > 0
+                      ? `₹${Math.abs(transactions.filter(t => t.type === 'expense').reduce((max, t) => Math.abs(t.amount) > Math.abs(max.amount) ? t : max).amount).toLocaleString('en-IN')}`
+                      : "No expenses recorded"}
+                 </p>
+              </CardContent>
+           </Card>
+
+            <Card className="glass-card">
+              <CardHeader className="pb-2">
+                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="text-2xl font-bold">
+                    {transactions.length}
+                 </div>
+                 <p className="text-xs text-muted-foreground mt-1">
+                    Total transactions recorded
+                 </p>
+              </CardContent>
+           </Card>
+        </div>
+
         {/* Recent Transactions */}
         <motion.div variants={itemVariants}>
           <Card className="glass-card">
@@ -1067,6 +1279,8 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </motion.div>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );
