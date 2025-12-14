@@ -43,6 +43,7 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/transactions', require('./src/routes/transactionRoutes'));
+app.use('/api/recurring', require('./src/routes/recurring'));
 
 const PORT = process.env.PORT || 5000;
 

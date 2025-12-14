@@ -69,6 +69,8 @@ export default function Dashboard() {
   const [categories, setCategories] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'dashboard' | 'calendar'>('dashboard');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState('monthly');
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -212,26 +214,50 @@ export default function Dashboard() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/transactions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: formData.name || "Untitled",
-          amount: formData.type === "expense" ? -Math.abs(amount) : Math.abs(amount),
-          category: formData.category,
-          type: formData.type,
-          date: finalDate // Send full date object
-        })
-      });
+      if (isRecurring) {
+         const res = await fetch(`${API_URL}/api/recurring`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              name: formData.name || "Untitled Recurring",
+              amount: formData.type === "expense" ? -Math.abs(amount) : Math.abs(amount),
+              category: formData.category,
+              type: formData.type,
+              frequency,
+              startDate: finalDate
+            })
+         });
+         if (res.ok) {
+           fetchTransactions(); // Refresh list to show generated transaction if due
+           setOpen(false);
+           setFormData({ ...formData, name: "", amount: "" });
+           setIsRecurring(false);
+         }
+      } else {
+        const res = await fetch(`${API_URL}/api/transactions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            name: formData.name || "Untitled",
+            amount: formData.type === "expense" ? -Math.abs(amount) : Math.abs(amount),
+            category: formData.category,
+            type: formData.type,
+            date: finalDate // Send full date object
+          })
+        });
 
-      if (res.ok) {
-        const newTrans = await res.json();
-        setTransactions([{ ...newTrans, date: new Date(newTrans.date) }, ...transactions]);
-        setFormData({ ...formData, name: "", amount: "" });
-        setOpen(false);
+        if (res.ok) {
+          const newTrans = await res.json();
+          setTransactions([{ ...newTrans, date: new Date(newTrans.date) }, ...transactions]);
+          setFormData({ ...formData, name: "", amount: "" });
+          setOpen(false);
+        }
       }
     } catch (error) {
       console.error("Error adding transaction:", error);
@@ -567,20 +593,23 @@ export default function Dashboard() {
       <motion.header 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="max-w-7xl mx-auto mb-8 flex items-center justify-between border-b border-border/40 pb-4 bg-background/80 backdrop-blur-sm sticky top-0 z-10 px-2 rounded-b-lg"
+        className="max-w-7xl mx-auto mb-6 flex flex-col md:flex-row items-start md:items-center justify-between border-b border-border/40 pb-4 bg-background/80 backdrop-blur-sm sticky top-0 z-20 px-2 rounded-b-lg gap-4"
       >
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-primary/10 text-primary ring-2 ring-primary/20">
-            <User className="h-4 w-4 md:h-5 md:w-5" />
-          </div>
-          <div>
-            <h2 className="text-base md:text-lg font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent truncate max-w-[120px] md:max-w-none">
-              {user?.username || "User"}
-            </h2>
-            <p className="text-xs text-muted-foreground hidden md:block">Manage your expenses</p>
+        <div className="flex items-center justify-between w-full md:w-auto gap-3 md:gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 md:h-11 md:w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-purple-600/20 text-primary ring-2 ring-primary/20 shadow-sm">
+              <User className="h-5 w-5 md:h-6 md:w-6" />
+            </div>
+            <div>
+              <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent leading-tight">
+                {user?.username || "User"}
+              </h2>
+              <p className="text-xs text-muted-foreground font-medium">Manage your expenses</p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        
+        <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end overflow-x-auto pb-1 md:pb-0 no-scrollbar">
           <div className="flex bg-muted/50 p-1 rounded-lg border border-border mr-2">
             <Button 
               variant="ghost" 
@@ -833,6 +862,37 @@ export default function Dashboard() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
+                </div>
+                
+                {/* Recurring Option */}
+                <div className="pt-2">
+                   <div className="flex items-center gap-2 pb-2">
+                      <input 
+                        type="checkbox" 
+                        id="recurring" 
+                        checked={isRecurring} 
+                        onChange={(e) => setIsRecurring(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <Label htmlFor="recurring" className="cursor-pointer">Recurring Transaction?</Label>
+                   </div>
+                   
+                   {isRecurring && (
+                     <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                       <Label>Frequency</Label>
+                       <Select value={frequency} onValueChange={setFrequency}>
+                         <SelectTrigger>
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="daily">Daily</SelectItem>
+                           <SelectItem value="weekly">Weekly</SelectItem>
+                           <SelectItem value="monthly">Monthly</SelectItem>
+                           <SelectItem value="yearly">Yearly</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                   )}
                 </div>
                 <div className="flex gap-3 pt-4">
                   <Button
