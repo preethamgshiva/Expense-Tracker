@@ -12,19 +12,8 @@ export const detectAnomalies = (transactions: any[]) => {
 
     const anomalies: string[] = [];
 
-    Object.entries(categoryGroups).forEach(([category, amounts]) => {
-        if (amounts.length < 3) return;
-
-        const mean = amounts.reduce((a, b) => a + b, 0) / amounts.length;
-        const stdDev = Math.sqrt(amounts.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / amounts.length);
-
-        // Flag if > 2 std deviations
-        const threshold = mean + (2 * stdDev);
-
-        // Find latest transaction in this category
-        const outputAmt = amounts[0]; // Assuming sorted by date descending? Warning: logic requires latest.
-        // Simpler: Just check if the average is high
-    });
+    // Category-specific outlier detection logic paused for now
+    // Object.entries(categoryGroups).forEach(([_, amounts]) => { ... });
 
     // Simple heuristic for now: Transactions > 2x average expense
     const expenses = transactions.filter(t => t.type === 'expense').map(t => Number(t.amount));
