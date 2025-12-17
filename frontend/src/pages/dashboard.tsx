@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -32,7 +32,6 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import {
-
   PieChart,
   Pie,
   Cell,
@@ -47,6 +46,11 @@ import {
   Legend,
   Sector
 } from "recharts";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "../components/ui/resizable"
 
 import {
   Select,
@@ -57,7 +61,8 @@ import {
 } from "../components/ui/select";
 import {
   ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, CreditCard, DollarSign, Plus, Settings, User, Trash2, Edit2, Check, X, LogOut, Download, ChevronLeft, ChevronRight, FileText, Calendar as CalendarIcon, LayoutDashboard
-, Camera, Loader2 } from "lucide-react";
+, Camera, Loader2, Brain } from "lucide-react";
+import { detectAnomalies, calculateTrends, predictMonthEnd } from '../utils/analytics';
 import { createWorker } from 'tesseract.js';
 
 export default function Dashboard() {
@@ -75,6 +80,11 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
+
+  // Calculate Smart Insights
+  const anomalies = useMemo(() => detectAnomalies(transactions), [transactions]);
+  const trends = useMemo(() => calculateTrends(transactions), [transactions]);
+  const forecast = useMemo(() => predictMonthEnd(transactions), [transactions]);
 
   const handleScanReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -675,88 +685,114 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full"
-        />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-background p-4 md:p-6 transition-colors duration-300">
-      {/* Header */}
-      <motion.header 
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="max-w-7xl mx-auto mb-6 flex flex-col md:flex-row items-start md:items-center justify-between border-b border-border/40 pb-4 bg-background/80 backdrop-blur-sm sticky top-0 z-20 px-2 rounded-b-lg gap-4"
-      >
-        <div className="flex items-center justify-between w-full md:w-auto gap-3 md:gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 md:h-11 md:w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-purple-600/20 text-primary ring-2 ring-primary/20 shadow-sm">
-              <User className="h-5 w-5 md:h-6 md:w-6" />
-            </div>
-            <div>
-              <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent leading-tight">
-                {user?.username || "User"}
-              </h2>
-              <p className="text-xs text-muted-foreground font-medium">Manage your expenses</p>
-            </div>
+    <div className="fixed inset-0 h-full w-full flex bg-background text-foreground overflow-hidden">
+      
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-64 flex-col border-r bg-card p-4 h-full z-30">
+        <div className="flex items-center gap-2 px-2 mb-6">
+          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">
+            E
           </div>
+          <span className="font-bold text-xl">ExpenseTracker</span>
         </div>
-        
-        <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-          <div className="flex bg-muted/50 p-1 rounded-lg border border-border mr-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setViewMode('dashboard')} 
-              className={`h-8 px-2 rounded-md transition-all ${viewMode === 'dashboard' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <LayoutDashboard className="h-4 w-4 mr-1" />
-              <span className="hidden md:inline">Dashboard</span>
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setViewMode('calendar')} 
-              className={`h-8 px-2 rounded-md transition-all ${viewMode === 'calendar' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <CalendarIcon className="h-4 w-4 mr-1" />
-              <span className="hidden md:inline">Calendar</span>
-            </Button>
-          </div>
-          
-          {/* Scan Receipt */}
-          <input 
-            type="file" 
-            accept="image/*" 
-            id="scan-receipt" 
-            className="hidden" 
-            onChange={handleScanReceipt} 
-            disabled={scanning}
-          />
-          <label htmlFor="scan-receipt">
-            <div className={`inline-flex items-center justify-center rounded-full w-9 h-9 hover:bg-primary/10 transition-colors cursor-pointer ${scanning ? 'opacity-50' : ''}`} title="Scan Bill">
-                {scanning ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Camera className="h-5 w-5 text-muted-foreground" />}
-            </div>
-          </label>
 
-          <Button variant="ghost" size="icon" onClick={handleExportCSV} className="rounded-full hover:bg-primary/10 transition-colors" title="Export CSV">
-            <FileText className="h-5 w-5 text-muted-foreground" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleDownloadPDF} className="rounded-full hover:bg-primary/10 transition-colors" title="Download Report">
-            <Download className="h-5 w-5 text-muted-foreground" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)} className="rounded-full hover:bg-primary/10 transition-colors" title="Settings">
-            <Settings className="h-5 w-5 text-muted-foreground" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => { localStorage.removeItem('token'); navigate('/login'); }} className="rounded-full hover:bg-red-50 hover:text-red-600 transition-colors" title="Logout">
-            <LogOut className="h-5 w-5 text-muted-foreground" />
-          </Button>
+        <div className="flex flex-col gap-4 mt-4 flex-1 overflow-y-auto no-scrollbar">
+           {/* User Profile Snippet */}
+           <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border shrink-0">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-purple-600/20 flex items-center justify-center text-primary ring-1 ring-primary/20">
+                 <User className="h-5 w-5" />
+              </div>
+              <div className="overflow-hidden">
+                 <p className="font-medium truncate text-sm">{user?.username || "User"}</p>
+
+              </div>
+           </div>
+
+           {/* Navigation */}
+           <nav className="flex flex-col gap-1">
+              <Button 
+                variant={viewMode === 'dashboard' ? 'default' : 'ghost'} 
+                className="justify-start" 
+                onClick={() => setViewMode('dashboard')}
+              >
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
+              <Button 
+                variant={viewMode === 'calendar' ? 'default' : 'ghost'} 
+                className="justify-start" 
+                onClick={() => setViewMode('calendar')}
+              >
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                Calendar
+              </Button>
+           </nav>
         </div>
-      </motion.header>
+
+        <div className="mt-auto flex flex-col gap-2 pt-4 border-t">
+           <Button variant="outline" className="justify-start w-full" onClick={() => setIsSettingsOpen(true)}>
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+           </Button>
+           <Button variant="ghost" className="justify-start w-full text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20" onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+           </Button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col">
+        
+        {/* Mobile Header */}
+        <header className="md:hidden sticky top-0 z-20 flex items-center justify-between p-4 bg-background/80 backdrop-blur-md border-b">
+           <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">E</div>
+              <span className="font-bold text-lg">ExpenseTracker</span>
+           </div>
+           <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)}>
+             <Settings className="h-5 w-5" />
+           </Button>
+        </header>
+
+        <div className="flex-1 p-4 md:p-8 space-y-6 pb-24 md:pb-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                  {viewMode === 'dashboard' ? 'Dashboard' : 'Calendar'}
+                </h1>
+                <p className="text-muted-foreground">
+                  {formatDateDisplay(new Date())}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
+                 <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export CSV
+                 </Button>
+                 <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Report
+                 </Button>
+                 
+                 {/* Desktop Add Button */}
+                 <Dialog open={open} onOpenChange={setOpen}>
+                    <DialogTrigger asChild>
+                       <Button size="sm" className="hidden md:flex">
+                          <Plus className="h-4 w-4 mr-2" /> Add Transaction
+                       </Button>
+                    </DialogTrigger>
+                    {/* Dialog Content Repositioned later in file or we reuse existing */}
+                 </Dialog>
+              </div>
+            </div>
 
       {/* Settings Dialog */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
@@ -877,156 +913,139 @@ export default function Dashboard() {
           </div>
         </DialogContent>
       </Dialog>
-
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="max-w-7xl mx-auto space-y-6"
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground mt-1 text-sm md:text-base">Track your expenses and manage your budget</p>
-          </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button className="w-full sm:w-auto gap-2 shadow-lg shadow-primary/20" size="lg">
-                  <Plus className="h-4 w-4" />
-                  Add Transaction
+      
+      {/* Restore Add Transaction Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Transaction</DialogTitle>
+            <DialogDescription>
+              Add a new income or expense transaction to track your finances.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount (₹)</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <select
+                id="category"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                required
+                className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background dark:bg-muted px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Select a category</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                max={new Date().toLocaleDateString('en-CA')}
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={formData.type === "expense" ? "default" : "secondary"}
+                  onClick={() => setFormData({ ...formData, type: "expense" })}
+                  className="w-full"
+                >
+                  Expense
                 </Button>
-              </motion.div>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Add Transaction</DialogTitle>
-                <DialogDescription>
-                  Add a new income or expense transaction to track your finances.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount (₹)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    required
+                <Button
+                  type="button"
+                  variant={formData.type === "income" ? "default" : "secondary"}
+                  onClick={() => setFormData({ ...formData, type: "income" })}
+                  className="w-full"
+                >
+                  Income
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Transaction Name (Optional)</Label>
+              <Input
+                id="name"
+                placeholder="e.g., Grocery Shopping"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+            
+            {/* Recurring Option */}
+            <div className="pt-2">
+               <div className="flex items-center gap-2 pb-2">
+                  <input 
+                    type="checkbox" 
+                    id="recurring" 
+                    checked={isRecurring} 
+                    onChange={(e) => setIsRecurring(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <select
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    required
-                    className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background dark:bg-muted px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    max={new Date().toLocaleDateString('en-CA')}
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant={formData.type === "expense" ? "default" : "secondary"}
-                      onClick={() => setFormData({ ...formData, type: "expense" })}
-                      className="w-full"
-                    >
-                      Expense
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={formData.type === "income" ? "default" : "secondary"}
-                      onClick={() => setFormData({ ...formData, type: "income" })}
-                      className="w-full"
-                    >
-                      Income
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Transaction Name (Optional)</Label>
-                  <Input
-                    id="name"
-                    placeholder="e.g., Grocery Shopping"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
-                </div>
-                
-                {/* Recurring Option */}
-                <div className="pt-2">
-                   <div className="flex items-center gap-2 pb-2">
-                      <input 
-                        type="checkbox" 
-                        id="recurring" 
-                        checked={isRecurring} 
-                        onChange={(e) => setIsRecurring(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                      <Label htmlFor="recurring" className="cursor-pointer">Recurring Transaction?</Label>
-                   </div>
-                   
-                   {isRecurring && (
-                     <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                       <Label>Frequency</Label>
-                       <Select value={frequency} onValueChange={setFrequency}>
-                         <SelectTrigger>
-                           <SelectValue />
-                         </SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="daily">Daily</SelectItem>
-                           <SelectItem value="weekly">Weekly</SelectItem>
-                           <SelectItem value="monthly">Monthly</SelectItem>
-                           <SelectItem value="yearly">Yearly</SelectItem>
-                         </SelectContent>
-                       </Select>
-                     </div>
-                   )}
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setOpen(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1"
-                  >
-                    Add Transaction
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+                  <Label htmlFor="recurring" className="cursor-pointer">Recurring Transaction?</Label>
+               </div>
+               
+               {isRecurring && (
+                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                   <Label>Frequency</Label>
+                   <Select value={frequency} onValueChange={setFrequency}>
+                     <SelectTrigger>
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="daily">Daily</SelectItem>
+                       <SelectItem value="weekly">Weekly</SelectItem>
+                       <SelectItem value="monthly">Monthly</SelectItem>
+                       <SelectItem value="yearly">Yearly</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
+               )}
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1"
+              >
+                Add Transaction
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+
 
         {viewMode === 'calendar' && (
           <motion.div 
@@ -1034,7 +1053,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-1 md:grid-cols-12 gap-6"
           >
-             <Card className="md:col-span-8 glass-card">
+             <Card className="md:col-span-8">
               <CardHeader>
                 <CardTitle>Transaction Calendar</CardTitle>
                 <CardDescription>View your spending by date</CardDescription>
@@ -1098,8 +1117,23 @@ export default function Dashboard() {
 
             <Card className="md:col-span-4 glass-card h-fit sticky top-24">
               <CardHeader>
-                <CardTitle>{selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a Date'}</CardTitle>
-                <CardDescription>Transactions for this day</CardDescription>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>{selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a Date'}</CardTitle>
+                        <CardDescription>Transactions for this day</CardDescription>
+                    </div>
+                    {selectedDate && (
+                        <div className="text-right">
+                           <p className="text-sm font-medium text-muted-foreground">Daily Total</p>
+                           <p className="text-lg font-bold text-red-600">
+                             ₹{transactions
+                                .filter(t => new Date(t.date).toDateString() === selectedDate.toDateString() && t.type === 'expense')
+                                .reduce((sum, t) => sum + Number(t.amount), 0)
+                                .toLocaleString('en-IN')}
+                           </p>
+                        </div>
+                    )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
@@ -1195,108 +1229,259 @@ export default function Dashboard() {
           </Carousel>
         </div>
 
-        {/* Charts Row */}
-        <div className="grid gap-6 md:grid-cols-7">
-          {/* Income vs Expenses Chart */}
-          <motion.div variants={itemVariants} className="md:col-span-4">
-            <Card className="h-full glass-card hover:shadow-md transition-shadow duration-300">
+        {/* Charts Row - Resizable Panels for Desktop */}
+        <div className="hidden lg:block h-[500px] mb-6 border rounded-lg overflow-hidden bg-card/50 shadow-sm">
+           <ResizablePanelGroup direction="horizontal">
+              <ResizablePanel defaultSize={65} minSize={30}>
+                 <div className="h-full p-4 flex flex-col">
+                    <div className="mb-4">
+                       <h3 className="font-semibold text-lg">Income vs Expenses</h3>
+                       <p className="text-sm text-muted-foreground">Monthly comparison</p>
+                    </div>
+                    <div className="flex-1 w-full min-h-0">
+                       <ResponsiveContainer width="100%" height="100%">
+                          <ComposedChart data={monthlyData}>
+                             <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" vertical={false} />
+                             <XAxis dataKey="month" className="text-xs text-muted-foreground" tickLine={false} axisLine={false} dy={10} />
+                             <YAxis className="text-xs text-muted-foreground" tickLine={false} axisLine={false} dx={-10} tickFormatter={(value) => `₹${value/1000}k`} />
+                             <Tooltip 
+                                contentStyle={{ backgroundColor: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", backdropFilter: "blur(10px)" }}
+                                itemStyle={{ fontSize: '12px' }}
+                                labelStyle={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#fff' }}
+                                formatter={(value: number, name: string) => [`₹${value.toLocaleString('en-IN')}`, name === 'balance' ? 'Net Balance' : name.charAt(0).toUpperCase() + name.slice(1)]}
+                             />
+                             <Legend verticalAlign="top" height={36} iconType="circle" />
+                             <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
+                             <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
+                             <Line type="monotone" dataKey="balance" name="Balance" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: "#8b5cf6", strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 6 }} />
+                          </ComposedChart>
+                       </ResponsiveContainer>
+                    </div>
+                 </div>
+              </ResizablePanel>
+              
+              <ResizableHandle withHandle />
+              
+              <ResizablePanel defaultSize={35} minSize={30}>
+                 <div className="h-full p-4 flex flex-col">
+                    <div className="mb-4">
+                       <h3 className="font-semibold text-lg">Spending by Category</h3>
+                       <p className="text-sm text-muted-foreground">Expense distribution</p>
+                    </div>
+                    <div className="flex-1 w-full min-h-0">
+                       <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                             <PieAny
+                                activeIndex={activeIndex}
+                                activeShape={renderActiveShape}
+                                data={categoryData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius="55%"
+                                outerRadius="75%"
+                                paddingAngle={4}
+                                dataKey="value"
+                                onMouseEnter={onPieEnter}
+                                animationDuration={1500}
+                             >
+                                {categoryData.map((entry: any, index: number) => (
+                                   <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                                ))}
+                             </PieAny>
+                          </PieChart>
+                       </ResponsiveContainer>
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                        {categoryData.slice(0, 6).map((entry: any, index: number) => (
+                          <div key={index} className="flex items-center gap-1.5">
+                            <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }} />
+                            <span className="truncate text-muted-foreground">{entry.name}</span>
+                          </div>
+                        ))}
+                    </div>
+                 </div>
+              </ResizablePanel>
+           </ResizablePanelGroup>
+        </div>
+
+        {/* Mobile Charts Fallback (Vertical Stack) */}
+        {!isRecurring && ( /* Just reusing a variable to be always true or simpler check? actually lg:hidden handles it via CSS class above/below */ null )}
+        <div className="grid gap-6 grid-cols-1 lg:hidden">
+          {/* Income vs Expenses Chart (Mobile) */}
+          <Card className="h-full">
               <CardHeader>
                 <CardTitle>Income vs Expenses</CardTitle>
-                <CardDescription>Monthly comparison of your income and expenses</CardDescription>
+                <CardDescription>Monthly comparison</CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <ComposedChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" vertical={false} />
-                    <XAxis 
-                      dataKey="month" 
-                      className="text-xs text-muted-foreground" 
-                      tickLine={false} 
-                      axisLine={false} 
-                      dy={10}
-                    />
-                    <YAxis 
-                      className="text-xs text-muted-foreground" 
-                      tickLine={false} 
-                      axisLine={false} 
-                      dx={-10}
-                      tickFormatter={(value) => `₹${value/1000}k`}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(0,0,0,0.8)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: "12px",
-                        backdropFilter: "blur(10px)",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.5)"
-                      }}
-                      itemStyle={{ fontSize: '12px' }}
-                      labelStyle={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#fff' }}
-                      formatter={(value: number, name: string) => [
-                        `₹${value.toLocaleString('en-IN')}`,
-                        name === 'balance' ? 'Net Balance' : name.charAt(0).toUpperCase() + name.slice(1)
-                      ]}
-                    />
-                    <Legend 
-                      verticalAlign="top" 
-                      height={36}
-                      iconType="circle"
-                      formatter={(value) => <span className="text-xs font-medium text-muted-foreground ml-1">{value === 'balance' ? 'Net Balance' : value.charAt(0).toUpperCase() + value.slice(1)}</span>}
-                    />
-                    <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
-                    <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
-                    <Line type="monotone" dataKey="balance" name="Balance" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: "#8b5cf6", strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 6 }} />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Category Breakdown */}
-          <motion.div variants={itemVariants} className="md:col-span-3">
-            <Card className="h-full glass-card hover:shadow-md transition-shadow duration-300">
-              <CardHeader>
-                <CardTitle>Spending by Category</CardTitle>
-                <CardDescription>Your expense distribution</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <PieAny
-                      activeIndex={activeIndex}
-                      activeShape={renderActiveShape}
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={70}
-                      outerRadius={90}
-                      paddingAngle={4}
-                      dataKey="value"
-                      onMouseEnter={onPieEnter}
-                      animationDuration={1500}
-                    >
-                      {categoryData.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                      ))}
-                    </PieAny>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                  {categoryData.slice(0, 6).map((entry: any, index: number) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                      <span className="truncate text-muted-foreground">{entry.name}</span>
-                    </div>
-                  ))}
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={monthlyData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" vertical={false} />
+                      <XAxis dataKey="month" className="text-xs text-muted-foreground" tickLine={false} axisLine={false} dy={10} />
+                      <YAxis className="text-xs text-muted-foreground" tickLine={false} axisLine={false} dx={-10} tickFormatter={(value) => `₹${value/1000}k`} />
+                      <Tooltip />
+                      <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
+                      <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+
+          {/* Category Breakdown (Mobile) */}
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle>Spending by Category</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <PieAny
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                         {categoryData.map((entry: any, index: number) => (
+                           <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                         ))}
+                      </PieAny>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+        </div>
+
+        {/* Smart Analysis Section (Desktop Grid) */}
+        <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-900/20 border-indigo-100 dark:border-indigo-900">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" /> 
+                        Spending Trend
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-lg font-semibold text-foreground">
+                        {trends}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-900/20 border-purple-100 dark:border-purple-900">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                        <Brain className="h-4 w-4" /> 
+                        Smart Forecast
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-foreground">
+                        ₹{forecast.toLocaleString('en-IN')}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                        Projected end-of-month expense
+                    </p>
+                </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-900/20 border-amber-100 dark:border-amber-900">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                        <Brain className="h-4 w-4" /> 
+                        AI Insight
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {anomalies.length > 0 ? (
+                        <div className="text-sm font-medium text-foreground">
+                            {anomalies[0]}
+                        </div>
+                    ) : (
+                        <div className="text-sm text-muted-foreground">
+                            Your spending patterns look normal this month.
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+
+        {/* Smart Analysis Section (Mobile Carousel) */}
+        <div className="md:hidden mb-6 space-y-2">
+          <h3 className="font-semibold text-lg px-1">AI Insights</h3>
+          <Carousel className="w-full relative px-2">
+            <CarouselContent>
+               <CarouselItem>
+                  <Card className="h-full bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-900/20 border-indigo-100 dark:border-indigo-900">
+                      <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                              <TrendingUp className="h-4 w-4" /> 
+                              Spending Trend
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          <div className="text-lg font-semibold text-foreground">
+                              {trends}
+                          </div>
+                      </CardContent>
+                  </Card>
+               </CarouselItem>
+               <CarouselItem>
+                   <Card className="h-full bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-900/20 border-purple-100 dark:border-purple-900">
+                      <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                              <Brain className="h-4 w-4" /> 
+                              Smart Forecast
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          <div className="text-2xl font-bold text-foreground">
+                              ₹{forecast.toLocaleString('en-IN')}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                              Projected end-of-month expense
+                          </p>
+                      </CardContent>
+                  </Card>
+               </CarouselItem>
+               <CarouselItem>
+                   <Card className="h-full bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-900/20 border-amber-100 dark:border-amber-900">
+                      <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                              <Brain className="h-4 w-4" /> 
+                              AI Insight
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          {anomalies.length > 0 ? (
+                              <div className="text-sm font-medium text-foreground">
+                                  {anomalies[0]}
+                              </div>
+                          ) : (
+                              <div className="text-sm text-muted-foreground">
+                                  Your spending patterns look normal this month.
+                              </div>
+                          )}
+                      </CardContent>
+                  </Card>
+               </CarouselItem>
+            </CarouselContent>
+            <div className="flex justify-between absolute top-1/2 -translate-y-1/2 left-0 right-0 pointer-events-none px-1">
+               <CarouselPrevious className="pointer-events-auto relative left-0 translate-y-0 h-8 w-8" />
+               <CarouselNext className="pointer-events-auto relative right-0 translate-y-0 h-8 w-8" />
+            </div>
+          </Carousel>
         </div>
 
         {/* Deep Insights */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-           <Card className="glass-card">
+           <Card>
               <CardHeader className="pb-2">
                  <CardTitle className="text-sm font-medium text-muted-foreground">Top Spending Category</CardTitle>
               </CardHeader>
@@ -1312,7 +1497,7 @@ export default function Dashboard() {
               </CardContent>
            </Card>
 
-           <Card className="glass-card">
+           <Card>
               <CardHeader className="pb-2">
                  <CardTitle className="text-sm font-medium text-muted-foreground">Largest Single Expense</CardTitle>
               </CardHeader>
@@ -1454,7 +1639,34 @@ export default function Dashboard() {
         </motion.div>
           </motion.div>
         )}
-      </motion.div>
+      
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t p-2 flex justify-around items-center z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <Button variant="ghost" className={`flex-col h-auto py-2 gap-1 rounded-xl ${viewMode === 'dashboard' ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`} onClick={() => setViewMode('dashboard')}>
+             <LayoutDashboard className="h-5 w-5" />
+             <span className="text-[10px] font-medium">Home</span>
+          </Button>
+          <Button variant="ghost" className={`flex-col h-auto py-2 gap-1 rounded-xl ${viewMode === 'calendar' ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`} onClick={() => setViewMode('calendar')}>
+             <CalendarIcon className="h-5 w-5" />
+             <span className="text-[10px] font-medium">Calendar</span>
+          </Button>
+          <div className="-mt-8">
+             <Button className="rounded-full h-14 w-14 shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground border-4 border-background" onClick={() => setOpen(true)}>
+                <Plus className="h-6 w-6" />
+             </Button>
+          </div>
+          <Button variant="ghost" className="flex-col h-auto py-2 gap-1 text-muted-foreground rounded-xl" onClick={() => document.getElementById('scan-receipt')?.click()}>
+             <Camera className="h-5 w-5" />
+             <span className="text-[10px] font-medium">Scan</span>
+          </Button>
+          <Button variant="ghost" className="flex-col h-auto py-2 gap-1 text-muted-foreground rounded-xl" onClick={() => setIsSettingsOpen(true)}>
+             <Settings className="h-5 w-5" />
+             <span className="text-[10px] font-medium">Settings</span>
+          </Button>
+      </div>
+
+       </div> {/* End of Content Div */}
+    </main>
     </div>
   );
 }
