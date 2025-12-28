@@ -61,7 +61,8 @@ import {
 } from "../components/ui/select";
 import {
   ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, CreditCard, DollarSign, Plus, Settings, User, Trash2, Edit2, Check, X, LogOut, Download, ChevronLeft, ChevronRight, FileText, Calendar as CalendarIcon, LayoutDashboard
-, Camera, Loader2, Brain } from "lucide-react";
+  , Camera, Loader2, Brain
+} from "lucide-react";
 import { detectAnomalies, calculateTrends, predictMonthEnd } from '../utils/analytics';
 
 
@@ -87,8 +88,8 @@ export default function Dashboard() {
   const forecast = useMemo(() => predictMonthEnd(transactions), [transactions]);
 
 
-  
-  const [editingCategory, setEditingCategory] = useState<{index: number, value: string} | null>(null);
+
+  const [editingCategory, setEditingCategory] = useState<{ index: number, value: string } | null>(null);
   const [newCategory, setNewCategory] = useState("");
 
   const [formData, setFormData] = useState({
@@ -124,8 +125,8 @@ export default function Dashboard() {
     if (!token) return;
 
     try {
-      const transRes = await fetch(`${API_URL}/api/transactions`, { 
-        headers: { 'Authorization': `Bearer ${token}` } 
+      const transRes = await fetch(`${API_URL}/api/transactions`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (transRes.ok) {
         const transData = await transRes.json();
@@ -152,7 +153,7 @@ export default function Dashboard() {
       try {
         const API_URL = import.meta.env.VITE_API_URL || "";
         const headers = { 'Authorization': `Bearer ${token}` };
-        
+
         // Fetch User
         const userRes = await fetch(`${API_URL}/api/auth/me`, { headers });
         if (userRes.ok) {
@@ -167,7 +168,7 @@ export default function Dashboard() {
 
         // Fetch Transactions
         await fetchTransactions();
-        
+
       } catch (error) {
         console.error("Error initializing:", error);
       } finally {
@@ -224,7 +225,7 @@ export default function Dashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const amount = parseFloat(formData.amount);
     if (isNaN(amount) || !formData.category || !formData.date) {
       return;
@@ -232,37 +233,37 @@ export default function Dashboard() {
 
     const token = localStorage.getItem('token');
     const API_URL = import.meta.env.VITE_API_URL || "";
-    
+
     // Add current time if the selected date is today
     let finalDate = new Date(formData.date);
     const today = new Date();
     if (finalDate.toDateString() === today.toDateString()) {
-        finalDate = new Date(); // Use current full timestamp
+      finalDate = new Date(); // Use current full timestamp
     }
 
     try {
       if (isRecurring) {
-         const res = await fetch(`${API_URL}/api/recurring`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              name: formData.name || "Untitled Recurring",
-              amount: formData.type === "expense" ? -Math.abs(amount) : Math.abs(amount),
-              category: formData.category,
-              type: formData.type,
-              frequency,
-              startDate: finalDate
-            })
-         });
-         if (res.ok) {
-           fetchTransactions(); // Refresh list to show generated transaction if due
-           setOpen(false);
-           setFormData({ ...formData, name: "", amount: "" });
-           setIsRecurring(false);
-         }
+        const res = await fetch(`${API_URL}/api/recurring`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            name: formData.name || "Untitled Recurring",
+            amount: formData.type === "expense" ? -Math.abs(amount) : Math.abs(amount),
+            category: formData.category,
+            type: formData.type,
+            frequency,
+            startDate: finalDate
+          })
+        });
+        if (res.ok) {
+          fetchTransactions(); // Refresh list to show generated transaction if due
+          setOpen(false);
+          setFormData({ ...formData, name: "", amount: "" });
+          setIsRecurring(false);
+        }
       } else {
         const res = await fetch(`${API_URL}/api/transactions`, {
           method: 'POST',
@@ -307,16 +308,16 @@ export default function Dashboard() {
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
-    
+
     // Add title
     doc.setFontSize(18);
     doc.text("Expense Tracker Report", 14, 22);
-    
+
     // Add user info and date
     doc.setFontSize(11);
     doc.text(`User: ${user?.username || "User"}`, 14, 30);
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 36);
-    
+
     // Add summary
     doc.text(`Total Balance: ₹${balance.toLocaleString('en-IN')}`, 14, 46);
     doc.text(`Total Income: ₹${totalIncome.toLocaleString('en-IN')}`, 14, 52);
@@ -347,7 +348,7 @@ export default function Dashboard() {
       headers.join(","),
       ...transactions.map(t => [
         new Date(t.date).toLocaleDateString(),
-        `"${t.name}"`, 
+        `"${t.name}"`,
         t.category,
         t.type,
         t.type === 'expense' ? -Math.abs(t.amount) : t.amount
@@ -373,12 +374,12 @@ export default function Dashboard() {
   // Process monthly data
   const monthlyDataMap = new Map();
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  
+
   transactions.forEach(t => {
     const date = new Date(t.date);
     const monthIndex = date.getMonth();
     const month = monthNames[monthIndex];
-    
+
     if (!monthlyDataMap.has(month)) {
       monthlyDataMap.set(month, { month, income: 0, expenses: 0, balance: 0, index: monthIndex });
     }
@@ -411,7 +412,7 @@ export default function Dashboard() {
     const ex = mx + (cos >= 0 ? 1 : -1) * 22;
     const ey = my;
     const textAnchor = cos >= 0 ? 'start' : 'end';
-  
+
     return (
       <g>
         <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} className="text-xl font-bold fill-foreground">
@@ -462,10 +463,10 @@ export default function Dashboard() {
   const categoryDataMap = new Map();
   transactions.filter(t => t.type === 'expense').forEach(t => {
     if (!categoryDataMap.has(t.category)) {
-      categoryDataMap.set(t.category, { 
-        name: t.category, 
-        value: 0, 
-        color: categoryColors[t.category] || "#" + Math.floor(Math.random()*16777215).toString(16) 
+      categoryDataMap.set(t.category, {
+        name: t.category,
+        value: 0,
+        color: categoryColors[t.category] || "#" + Math.floor(Math.random() * 16777215).toString(16)
       });
     }
     categoryDataMap.get(t.category).value += Math.abs(t.amount);
@@ -517,10 +518,10 @@ export default function Dashboard() {
     const isYesterday = new Date(now.setDate(now.getDate() - 1)).toDateString() === date.toDateString();
 
     if (isToday) {
-        return `Today at ${date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+      return `Today at ${date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
     }
     if (isYesterday) {
-        return 'Yesterday';
+      return 'Yesterday';
     }
     return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   };
@@ -587,7 +588,7 @@ export default function Dashboard() {
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
       opacity: 1,
       transition: { staggerChildren: 0.1 }
     }
@@ -595,8 +596,8 @@ export default function Dashboard() {
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: { 
-      y: 0, 
+    visible: {
+      y: 0,
       opacity: 1,
       transition: { type: "spring", stiffness: 100 } as const
     }
@@ -612,7 +613,7 @@ export default function Dashboard() {
 
   return (
     <div className="fixed inset-0 h-full w-full flex bg-background text-foreground overflow-hidden">
-      
+
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r bg-card p-4 h-full z-30">
         <div className="flex items-center gap-2 px-2 mb-6">
@@ -623,363 +624,363 @@ export default function Dashboard() {
         </div>
 
         <div className="flex flex-col gap-4 mt-4 flex-1 overflow-y-auto no-scrollbar">
-           {/* User Profile Snippet */}
-           <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border shrink-0">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-purple-600/20 flex items-center justify-center text-primary ring-1 ring-primary/20">
-                 <User className="h-5 w-5" />
-              </div>
-              <div className="overflow-hidden">
-                 <p className="font-medium truncate text-sm">{user?.username || "User"}</p>
+          {/* User Profile Snippet */}
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border shrink-0">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-purple-600/20 flex items-center justify-center text-primary ring-1 ring-primary/20">
+              <User className="h-5 w-5" />
+            </div>
+            <div className="overflow-hidden">
+              <p className="font-medium truncate text-sm">{user?.username || "User"}</p>
 
-              </div>
-           </div>
+            </div>
+          </div>
 
-           {/* Navigation */}
-           <nav className="flex flex-col gap-1">
-              <Button 
-                variant={viewMode === 'dashboard' ? 'default' : 'ghost'} 
-                className="justify-start" 
-                onClick={() => setViewMode('dashboard')}
-              >
-                <LayoutDashboard className="h-4 w-4 mr-2" />
-                Dashboard
-              </Button>
-              <Button 
-                variant={viewMode === 'calendar' ? 'default' : 'ghost'} 
-                className="justify-start" 
-                onClick={() => setViewMode('calendar')}
-              >
-                <CalendarIcon className="h-4 w-4 mr-2" />
-                Calendar
-              </Button>
-           </nav>
+          {/* Navigation */}
+          <nav className="flex flex-col gap-1">
+            <Button
+              variant={viewMode === 'dashboard' ? 'default' : 'ghost'}
+              className="justify-start"
+              onClick={() => setViewMode('dashboard')}
+            >
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Dashboard
+            </Button>
+            <Button
+              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+              className="justify-start"
+              onClick={() => setViewMode('calendar')}
+            >
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Calendar
+            </Button>
+          </nav>
         </div>
 
         <div className="mt-auto flex flex-col gap-2 pt-4 border-t">
-           <Button variant="outline" className="justify-start w-full" onClick={() => setIsSettingsOpen(true)}>
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-           </Button>
-           <Button variant="ghost" className="justify-start w-full text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20" onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-           </Button>
+          <Button variant="outline" className="justify-start w-full" onClick={() => setIsSettingsOpen(true)}>
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Button>
+          <Button variant="ghost" className="justify-start w-full text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20" onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
         </div>
       </aside>
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col">
-        
+
         {/* Mobile Header */}
         <header className="md:hidden sticky top-0 z-20 flex items-center justify-between p-4 bg-background/80 backdrop-blur-md border-b">
-           <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">E</div>
-              <span className="font-bold text-lg">ExpenseTracker</span>
-           </div>
-           <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)}>
-             <Settings className="h-5 w-5" />
-           </Button>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">E</div>
+            <span className="font-bold text-lg">ExpenseTracker</span>
+          </div>
+          <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)}>
+            <Settings className="h-5 w-5" />
+          </Button>
         </header>
 
         <div className="flex-1 p-4 md:p-8 space-y-6 pb-24 md:pb-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                  {viewMode === 'dashboard' ? 'Dashboard' : 'Calendar'}
-                </h1>
-                <p className="text-muted-foreground">
-                  {formatDateDisplay(new Date())}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
-                 <Button variant="outline" size="sm" onClick={handleExportCSV}>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Export CSV
-                 </Button>
-                 <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Report
-                 </Button>
-                 
-                 {/* Desktop Add Button */}
-                 <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogTrigger asChild>
-                       <Button size="sm" className="hidden md:flex">
-                          <Plus className="h-4 w-4 mr-2" /> Add Transaction
-                       </Button>
-                    </DialogTrigger>
-                    {/* Dialog Content Repositioned later in file or we reuse existing */}
-                 </Dialog>
-              </div>
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                {viewMode === 'dashboard' ? 'Dashboard' : 'Calendar'}
+              </h1>
+              <p className="text-muted-foreground">
+                {formatDateDisplay(new Date())}
+              </p>
             </div>
 
-      {/* Settings Dialog */}
-      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Settings</DialogTitle>
-            <DialogDescription>
-              Manage your preferences and categories.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
-            {/* Theme Settings */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">Appearance</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div 
-                  className={`cursor-pointer rounded-lg border-2 p-4 flex flex-col items-center gap-2 transition-all ${theme === 'black' ? 'border-primary bg-primary/10' : 'border-border hover:border-border/80'}`}
-                  onClick={() => setTheme('black')}
-                >
-                  <div className="h-10 w-full rounded bg-black border border-white/10 shadow-sm"></div>
-                  <span className="text-sm font-medium">Midnight Black</span>
-                </div>
-                <div 
-                  className={`cursor-pointer rounded-lg border-2 p-4 flex flex-col items-center gap-2 transition-all ${theme === 'light' ? 'border-primary bg-primary/10' : 'border-border hover:border-border/80'}`}
-                  onClick={() => setTheme('light')}
-                >
-                  <div className="h-10 w-full rounded bg-white border border-gray-200 shadow-sm"></div>
-                  <span className="text-sm font-medium">Light Mode</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-muted-foreground">Categories</h3>
-            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-              {categories.map((cat, index) => (
-                <div key={index} className="flex items-center gap-2 group">
-                  {editingCategory?.index === index ? (
-                    <Input
-                      value={editingCategory.value}
-                      onChange={(e) =>
-                        setEditingCategory({ ...editingCategory, value: e.target.value })
-                      }
-                      className="h-8"
-                      autoFocus
-                    />
-                  ) : (
-                    <div className="flex-1 flex items-center justify-between rounded-md border border-transparent px-2 py-1 hover:bg-muted/50 group-hover:border-border transition-colors">
-                      <span className="text-sm">{cat}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-1">
-                    {editingCategory?.index === index ? (
-                      <>
-                        <Button
-                          size="icon"
-                          onClick={saveCategoryEdit}
-                          className="h-8 w-8 bg-green-500 hover:bg-green-600 text-white shadow-sm"
-                          title="Save"
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="secondary"
-                          onClick={() => setEditingCategory(null)}
-                          className="h-8 w-8 bg-gray-200 hover:bg-gray-300 text-gray-700 shadow-sm"
-                          title="Cancel"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => startEditing(index, cat)}
-                          className="h-8 w-8 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700"
-                          title="Edit"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleDeleteCategory(index)}
-                          className="h-8 w-8 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-2 pt-2 border-t">
-              <Input
-                placeholder="New Category Name"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
-                className="h-9"
-              />
-              <Button
-                size="icon"
-                onClick={handleAddCategory}
-                className="h-9 w-9 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-                title="Add Category"
-              >
-                <Plus className="h-5 w-5" />
+            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
+              <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                <FileText className="h-4 w-4 mr-2" />
+                Export CSV
               </Button>
-            </div>
+              <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+                <Download className="h-4 w-4 mr-2" />
+                Report
+              </Button>
+
+              {/* Desktop Add Button */}
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="hidden md:flex">
+                    <Plus className="h-4 w-4 mr-2" /> Add Transaction
+                  </Button>
+                </DialogTrigger>
+                {/* Dialog Content Repositioned later in file or we reuse existing */}
+              </Dialog>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Restore Add Transaction Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add Transaction</DialogTitle>
-            <DialogDescription>
-              Add a new income or expense transaction to track your finances.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount (₹)</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <select
-                id="category"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                required
-                className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background dark:bg-muted px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="">Select a category</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                max={new Date().toLocaleDateString('en-CA')}
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Type</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={formData.type === "expense" ? "default" : "secondary"}
-                  onClick={() => setFormData({ ...formData, type: "expense" })}
-                  className="w-full"
-                >
-                  Expense
-                </Button>
-                <Button
-                  type="button"
-                  variant={formData.type === "income" ? "default" : "secondary"}
-                  onClick={() => setFormData({ ...formData, type: "income" })}
-                  className="w-full"
-                >
-                  Income
-                </Button>
+
+          {/* Settings Dialog */}
+          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Settings</DialogTitle>
+                <DialogDescription>
+                  Manage your preferences and categories.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-6 py-4">
+                {/* Theme Settings */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-muted-foreground">Appearance</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div
+                      className={`cursor-pointer rounded-lg border-2 p-4 flex flex-col items-center gap-2 transition-all ${theme === 'black' ? 'border-primary bg-primary/10' : 'border-border hover:border-border/80'}`}
+                      onClick={() => setTheme('black')}
+                    >
+                      <div className="h-10 w-full rounded bg-black border border-white/10 shadow-sm"></div>
+                      <span className="text-sm font-medium">Midnight Black</span>
+                    </div>
+                    <div
+                      className={`cursor-pointer rounded-lg border-2 p-4 flex flex-col items-center gap-2 transition-all ${theme === 'light' ? 'border-primary bg-primary/10' : 'border-border hover:border-border/80'}`}
+                      onClick={() => setTheme('light')}
+                    >
+                      <div className="h-10 w-full rounded bg-white border border-gray-200 shadow-sm"></div>
+                      <span className="text-sm font-medium">Light Mode</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">Categories</h3>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                    {categories.map((cat, index) => (
+                      <div key={index} className="flex items-center gap-2 group">
+                        {editingCategory?.index === index ? (
+                          <Input
+                            value={editingCategory.value}
+                            onChange={(e) =>
+                              setEditingCategory({ ...editingCategory, value: e.target.value })
+                            }
+                            className="h-8"
+                            autoFocus
+                          />
+                        ) : (
+                          <div className="flex-1 flex items-center justify-between rounded-md border border-transparent px-2 py-1 hover:bg-muted/50 group-hover:border-border transition-colors">
+                            <span className="text-sm">{cat}</span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-1">
+                          {editingCategory?.index === index ? (
+                            <>
+                              <Button
+                                size="icon"
+                                onClick={saveCategoryEdit}
+                                className="h-8 w-8 bg-green-500 hover:bg-green-600 text-white shadow-sm"
+                                title="Save"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="secondary"
+                                onClick={() => setEditingCategory(null)}
+                                className="h-8 w-8 bg-gray-200 hover:bg-gray-300 text-gray-700 shadow-sm"
+                                title="Cancel"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => startEditing(index, cat)}
+                                className="h-8 w-8 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700"
+                                title="Edit"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleDeleteCategory(index)}
+                                className="h-8 w-8 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <Input
+                      placeholder="New Category Name"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
+                      className="h-9"
+                    />
+                    <Button
+                      size="icon"
+                      onClick={handleAddCategory}
+                      className="h-9 w-9 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                      title="Add Category"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="name">Transaction Name (Optional)</Label>
-              <Input
-                id="name"
-                placeholder="e.g., Grocery Shopping"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            
-            {/* Recurring Option */}
-            <div className="pt-2">
-               <div className="flex items-center gap-2 pb-2">
-                  <input 
-                    type="checkbox" 
-                    id="recurring" 
-                    checked={isRecurring} 
-                    onChange={(e) => setIsRecurring(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            </DialogContent>
+          </Dialog>
+
+          {/* Restore Add Transaction Dialog */}
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add Transaction</DialogTitle>
+                <DialogDescription>
+                  Add a new income or expense transaction to track your finances.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Amount (₹)</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    required
                   />
-                  <Label htmlFor="recurring" className="cursor-pointer">Recurring Transaction?</Label>
-               </div>
-               
-               {isRecurring && (
-                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                   <Label>Frequency</Label>
-                   <Select value={frequency} onValueChange={setFrequency}>
-                     <SelectTrigger>
-                       <SelectValue />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="daily">Daily</SelectItem>
-                       <SelectItem value="weekly">Weekly</SelectItem>
-                       <SelectItem value="monthly">Monthly</SelectItem>
-                       <SelectItem value="yearly">Yearly</SelectItem>
-                     </SelectContent>
-                   </Select>
-                 </div>
-               )}
-            </div>
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1"
-              >
-                Add Transaction
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <select
+                    id="category"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    required
+                    className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background dark:bg-muted px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="date">Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    max={new Date().toLocaleDateString('en-CA')}
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={formData.type === "expense" ? "default" : "secondary"}
+                      onClick={() => setFormData({ ...formData, type: "expense" })}
+                      className="w-full"
+                    >
+                      Expense
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={formData.type === "income" ? "default" : "secondary"}
+                      onClick={() => setFormData({ ...formData, type: "income" })}
+                      className="w-full"
+                    >
+                      Income
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Transaction Name (Optional)</Label>
+                  <Input
+                    id="name"
+                    placeholder="e.g., Grocery Shopping"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+
+                {/* Recurring Option */}
+                <div className="pt-2">
+                  <div className="flex items-center gap-2 pb-2">
+                    <input
+                      type="checkbox"
+                      id="recurring"
+                      checked={isRecurring}
+                      onChange={(e) => setIsRecurring(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <Label htmlFor="recurring" className="cursor-pointer">Recurring Transaction?</Label>
+                  </div>
+
+                  {isRecurring && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                      <Label>Frequency</Label>
+                      <Select value={frequency} onValueChange={setFrequency}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1"
+                  >
+                    Add Transaction
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
 
 
 
-        {viewMode === 'calendar' && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 md:grid-cols-12 gap-6"
-          >
-             <Card className="md:col-span-8">
-              <CardHeader>
-                <CardTitle>Transaction Calendar</CardTitle>
-                <CardDescription>View your spending by date</CardDescription>
-              </CardHeader>
-              <CardContent className="flex justify-center p-6">
-                <style>{`
+          {viewMode === 'calendar' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-1 md:grid-cols-12 gap-6"
+            >
+              <Card className="md:col-span-8">
+                <CardHeader>
+                  <CardTitle>Transaction Calendar</CardTitle>
+                  <CardDescription>View your spending by date</CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center p-6">
+                  <style>{`
                   .rdp {
                     --rdp-cell-size: 50px;
                     --rdp-accent-color: var(--primary);
@@ -1001,26 +1002,26 @@ export default function Dashboard() {
                     margin: 2px auto 0;
                   }
                 `}</style>
-                <DayPicker
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  modifiers={{
-                    hasExpense: (date) => transactions.some(t => new Date(t.date).toDateString() === date.toDateString() && t.type === 'expense'),
-                    hasIncome: (date) => transactions.some(t => new Date(t.date).toDateString() === date.toDateString() && t.type === 'income')
-                  }}
-                  modifiersStyles={{
-                    hasExpense: { position: 'relative' },
-                    hasIncome: { position: 'relative' }
-                  }}
-                  components={{
-                    DayContent: (props: any) => {
-                       const { date } = props;
-                       const dayTransactions = transactions.filter(t => new Date(t.date).toDateString() === date.toDateString());
-                       const hasExpense = dayTransactions.some(t => t.type === 'expense');
-                       const hasIncome = dayTransactions.some(t => t.type === 'income');
-                       
-                       return (
+                  <DayPicker
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    modifiers={{
+                      hasExpense: (date) => transactions.some(t => new Date(t.date).toDateString() === date.toDateString() && t.type === 'expense'),
+                      hasIncome: (date) => transactions.some(t => new Date(t.date).toDateString() === date.toDateString() && t.type === 'income')
+                    }}
+                    modifiersStyles={{
+                      hasExpense: { position: 'relative' },
+                      hasIncome: { position: 'relative' }
+                    }}
+                    components={{
+                      DayContent: (props: any) => {
+                        const { date } = props;
+                        const dayTransactions = transactions.filter(t => new Date(t.date).toDateString() === date.toDateString());
+                        const hasExpense = dayTransactions.some(t => t.type === 'expense');
+                        const hasIncome = dayTransactions.some(t => t.type === 'income');
+
+                        return (
                           <div className="flex flex-col items-center justify-center h-full w-full relative p-2 text-sm z-10">
                             <span>{date.getDate()}</span>
                             <div className="flex gap-0.5 absolute bottom-1">
@@ -1028,565 +1029,581 @@ export default function Dashboard() {
                               {hasExpense && <div className="h-1.5 w-1.5 rounded-full bg-red-500" />}
                             </div>
                           </div>
-                       );
-                    }
-                  } as any}
-                />
-              </CardContent>
-            </Card>
+                        );
+                      }
+                    } as any}
+                  />
+                </CardContent>
+              </Card>
 
-            <Card className="md:col-span-4 glass-card h-fit sticky top-24">
-              <CardHeader>
-                <div className="flex justify-between items-start">
+              <Card className="md:col-span-4 glass-card h-fit sticky top-24">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
                     <div>
-                        <CardTitle>{selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a Date'}</CardTitle>
-                        <CardDescription>Transactions for this day</CardDescription>
+                      <CardTitle>{selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a Date'}</CardTitle>
+                      <CardDescription>Transactions for this day</CardDescription>
                     </div>
                     {selectedDate && (
-                        <div className="text-right">
-                           <p className="text-sm font-medium text-muted-foreground">Daily Total</p>
-                           <p className="text-lg font-bold text-red-600">
-                             ₹{transactions
-                                .filter(t => new Date(t.date).toDateString() === selectedDate.toDateString() && t.type === 'expense')
-                                .reduce((sum, t) => sum + Number(t.amount), 0)
-                                .toLocaleString('en-IN')}
-                           </p>
-                        </div>
-                    )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                  {selectedDate && transactions.filter(t => new Date(t.date).toDateString() === selectedDate.toDateString()).length > 0 ? (
-                    transactions.filter(t => new Date(t.date).toDateString() === selectedDate.toDateString()).map((t, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                            {t.type === 'income' ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm truncate max-w-[100px]">{t.name}</p>
-                            <p className="text-xs text-muted-foreground">{t.category}</p>
-                          </div>
-                        </div>
-                        <span className={`font-bold whitespace-nowrap ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                          {t.type === 'income' ? '+' : '-'}₹{Math.abs(t.amount)}
-                        </span>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-muted-foreground">Daily Total</p>
+                        <p className="text-lg font-bold text-red-600">
+                          ₹{transactions
+                            .filter(t => new Date(t.date).toDateString() === selectedDate.toDateString() && t.type === 'expense')
+                            .reduce((sum, t) => sum + Number(t.amount), 0)
+                            .toLocaleString('en-IN')}
+                        </p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-10 text-muted-foreground">
-                      <CalendarIcon className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                      <p>No transactions on this date</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {viewMode === 'dashboard' && (
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
-
-        {/* Stats Cards - Desktop Grid */}
-        <div className="hidden md:grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {statsCards.map((stat, index) => (
-            <motion.div key={index} variants={itemVariants} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
-              <Card className="border-border/50 shadow-sm hover:shadow-md transition-all duration-300 glass-card">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {stat.title}
-                  </CardTitle>
-                  <div className="p-2 bg-primary/5 rounded-full">
-                    <stat.icon className="h-4 w-4 text-primary" />
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold tracking-tight">₹{stat.amount.toLocaleString('en-IN')}</div>
-                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                    <span className={`${stat.subtextColor} inline-flex items-center font-medium`}>
-                      {stat.subIcon && <stat.subIcon className="h-3 w-3 mr-1" />}
-                      {stat.subtext}
-                    </span>
-                  </p>
+                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                    {selectedDate && transactions.filter(t => new Date(t.date).toDateString() === selectedDate.toDateString()).length > 0 ? (
+                      transactions.filter(t => new Date(t.date).toDateString() === selectedDate.toDateString()).map((t, i) => (
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                              {t.type === 'income' ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm truncate max-w-[100px]">{t.name}</p>
+                              <p className="text-xs text-muted-foreground">{t.category}</p>
+                            </div>
+                          </div>
+                          <span className={`font-bold whitespace-nowrap ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                            {t.type === 'income' ? '+' : '-'}₹{Math.abs(t.amount)}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-10 text-muted-foreground">
+                        <CalendarIcon className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                        <p>No transactions on this date</p>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
-          ))}
-        </div>
+          )}
 
-        {/* Stats Cards - Mobile Carousel */}
-        <div className="md:hidden">
-          <Carousel className="w-full max-w-xs mx-auto">
-            <CarouselContent>
-              {statsCards.map((stat, index) => (
-                <CarouselItem key={index}>
-                  <div className="p-1">
-                    <Card className="border-border/50 shadow-sm glass-card">
+          {viewMode === 'dashboard' && (
+            <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+
+              {/* Stats Cards - Desktop Grid */}
+              <div className="hidden md:grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {statsCards.map((stat, index) => (
+                  <motion.div key={index} variants={itemVariants} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
+                    <Card className="border-border/50 shadow-sm hover:shadow-md transition-all duration-300 glass-card">
                       <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">
                           {stat.title}
                         </CardTitle>
-                        <stat.icon className="h-4 w-4 text-muted-foreground" />
+                        <div className="p-2 bg-primary/5 rounded-full">
+                          <stat.icon className="h-4 w-4 text-primary" />
+                        </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold">₹{stat.amount.toLocaleString('en-IN')}</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          <span className={`${stat.subtextColor} inline-flex items-center`}>
-                            {stat.subIcon && <stat.subIcon className="h-3 w-3" />}
+                        <div className="text-2xl font-bold tracking-tight">₹{stat.amount.toLocaleString('en-IN')}</div>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <span className={`${stat.subtextColor} inline-flex items-center font-medium`}>
+                            {stat.subIcon && <stat.subIcon className="h-3 w-3 mr-1" />}
                             {stat.subtext}
                           </span>
                         </p>
                       </CardContent>
                     </Card>
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
-        </div>
+                  </motion.div>
+                ))}
+              </div>
 
-        {/* Charts Row - Resizable Panels for Desktop */}
-        <div className="hidden lg:block h-[500px] mb-6 border rounded-lg overflow-hidden bg-card/50 shadow-sm">
-           <ResizablePanelGroup direction="horizontal">
-              <ResizablePanel defaultSize={65} minSize={30}>
-                 <div className="h-full p-4 flex flex-col">
-                    <div className="mb-4">
-                       <h3 className="font-semibold text-lg">Income vs Expenses</h3>
-                       <p className="text-sm text-muted-foreground">Monthly comparison</p>
-                    </div>
-                    <div className="flex-1 w-full min-h-0">
-                       <ResponsiveContainer width="100%" height="100%">
+              {/* Stats Cards - Mobile Carousel */}
+              <div className="md:hidden">
+                <Carousel className="w-full max-w-xs mx-auto">
+                  <CarouselContent>
+                    {statsCards.map((stat, index) => (
+                      <CarouselItem key={index}>
+                        <div className="p-1">
+                          <Card className="border-border/50 shadow-sm glass-card">
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                              <CardTitle className="text-sm font-medium text-muted-foreground">
+                                {stat.title}
+                              </CardTitle>
+                              <stat.icon className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                              <div className="text-2xl font-bold">₹{stat.amount.toLocaleString('en-IN')}</div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                <span className={`${stat.subtextColor} inline-flex items-center`}>
+                                  {stat.subIcon && <stat.subIcon className="h-3 w-3" />}
+                                  {stat.subtext}
+                                </span>
+                              </p>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious />
+                  <CarouselNext />
+                </Carousel>
+              </div>
+
+              {/* Charts Row - Resizable Panels for Desktop */}
+              <div className="hidden lg:block h-[500px] mb-6 border rounded-lg overflow-hidden bg-card/50 shadow-sm">
+                <ResizablePanelGroup direction="horizontal">
+                  <ResizablePanel defaultSize={65} minSize={30}>
+                    <div className="h-full p-4 flex flex-col">
+                      <div className="mb-4">
+                        <h3 className="font-semibold text-lg">Income vs Expenses</h3>
+                        <p className="text-sm text-muted-foreground">Monthly comparison</p>
+                      </div>
+                      <div className="flex-1 w-full min-h-0">
+                        <ResponsiveContainer width="100%" height="100%">
                           <ComposedChart data={monthlyData}>
-                             <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" vertical={false} />
-                             <XAxis dataKey="month" className="text-xs text-muted-foreground" tickLine={false} axisLine={false} dy={10} />
-                             <YAxis className="text-xs text-muted-foreground" tickLine={false} axisLine={false} dx={-10} tickFormatter={(value) => `₹${value/1000}k`} />
-                             <Tooltip 
-                                contentStyle={{ backgroundColor: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", backdropFilter: "blur(10px)" }}
-                                itemStyle={{ fontSize: '12px' }}
-                                labelStyle={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#fff' }}
-                                formatter={(value: number, name: string) => [`₹${value.toLocaleString('en-IN')}`, name === 'balance' ? 'Net Balance' : name.charAt(0).toUpperCase() + name.slice(1)]}
-                             />
-                             <Legend verticalAlign="top" height={36} iconType="circle" />
-                             <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
-                             <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
-                             <Line type="monotone" dataKey="balance" name="Balance" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: "#8b5cf6", strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 6 }} />
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" vertical={false} />
+                            <XAxis dataKey="month" className="text-xs text-muted-foreground" tickLine={false} axisLine={false} dy={10} />
+                            <YAxis className="text-xs text-muted-foreground" tickLine={false} axisLine={false} dx={-10} tickFormatter={(value) => `₹${value / 1000}k`} />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", backdropFilter: "blur(10px)" }}
+                              itemStyle={{ fontSize: '12px' }}
+                              labelStyle={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#fff' }}
+                              formatter={(value: number, name: string) => [`₹${value.toLocaleString('en-IN')}`, name === 'balance' ? 'Net Balance' : name.charAt(0).toUpperCase() + name.slice(1)]}
+                            />
+                            <Legend verticalAlign="top" height={36} iconType="circle" />
+                            <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
+                            <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
+                            <Line type="monotone" dataKey="balance" name="Balance" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: "#8b5cf6", strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 6 }} />
                           </ComposedChart>
-                       </ResponsiveContainer>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
-                 </div>
-              </ResizablePanel>
-              
-              <ResizableHandle withHandle />
-              
-              <ResizablePanel defaultSize={35} minSize={30}>
-                 <div className="h-full p-4 flex flex-col">
-                    <div className="mb-4">
-                       <h3 className="font-semibold text-lg">Spending by Category</h3>
-                       <p className="text-sm text-muted-foreground">Expense distribution</p>
-                    </div>
-                    <div className="flex-1 w-full min-h-0">
-                       <ResponsiveContainer width="100%" height="100%">
+                  </ResizablePanel>
+
+                  <ResizableHandle withHandle />
+
+                  <ResizablePanel defaultSize={35} minSize={30}>
+                    <div className="h-full p-4 flex flex-col">
+                      <div className="mb-4">
+                        <h3 className="font-semibold text-lg">Spending by Category</h3>
+                        <p className="text-sm text-muted-foreground">Expense distribution</p>
+                      </div>
+                      <div className="flex-1 w-full min-h-0">
+                        <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                             <PieAny
-                                activeIndex={activeIndex}
-                                activeShape={renderActiveShape}
-                                data={categoryData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius="55%"
-                                outerRadius="75%"
-                                paddingAngle={4}
-                                dataKey="value"
-                                onMouseEnter={onPieEnter}
-                                animationDuration={1500}
-                             >
-                                {categoryData.map((entry: any, index: number) => (
-                                   <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                                ))}
-                             </PieAny>
+                            <PieAny
+                              activeIndex={activeIndex}
+                              activeShape={renderActiveShape}
+                              data={categoryData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius="55%"
+                              outerRadius="75%"
+                              paddingAngle={4}
+                              dataKey="value"
+                              onMouseEnter={onPieEnter}
+                              animationDuration={1500}
+                            >
+                              {categoryData.map((entry: any, index: number) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                              ))}
+                            </PieAny>
                           </PieChart>
-                       </ResponsiveContainer>
-                    </div>
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
                         {categoryData.slice(0, 6).map((entry: any, index: number) => (
                           <div key={index} className="flex items-center gap-1.5">
                             <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }} />
                             <span className="truncate text-muted-foreground">{entry.name}</span>
                           </div>
                         ))}
+                      </div>
                     </div>
-                 </div>
-              </ResizablePanel>
-           </ResizablePanelGroup>
-        </div>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </div>
 
-        {/* Mobile Charts Fallback (Vertical Stack) */}
-        {!isRecurring && ( /* Just reusing a variable to be always true or simpler check? actually lg:hidden handles it via CSS class above/below */ null )}
-        <div className="grid gap-6 grid-cols-1 lg:hidden">
-          {/* Income vs Expenses Chart (Mobile) */}
-          <Card className="h-full">
-              <CardHeader>
-                <CardTitle>Income vs Expenses</CardTitle>
-                <CardDescription>Monthly comparison</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={monthlyData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" vertical={false} />
-                      <XAxis dataKey="month" className="text-xs text-muted-foreground" tickLine={false} axisLine={false} dy={10} />
-                      <YAxis className="text-xs text-muted-foreground" tickLine={false} axisLine={false} dx={-10} tickFormatter={(value) => `₹${value/1000}k`} />
-                      <Tooltip />
-                      <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
-                      <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Mobile Charts Fallback (Vertical Stack) */}
+              {!isRecurring && ( /* Just reusing a variable to be always true or simpler check? actually lg:hidden handles it via CSS class above/below */ null)}
+              <div className="grid gap-6 grid-cols-1 lg:hidden">
+                {/* Income vs Expenses Chart (Mobile) */}
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle>Income vs Expenses</CardTitle>
+                    <CardDescription>Monthly comparison</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={monthlyData}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" vertical={false} />
+                          <XAxis dataKey="month" className="text-xs text-muted-foreground" tickLine={false} axisLine={false} dy={10} />
+                          <YAxis className="text-xs text-muted-foreground" tickLine={false} axisLine={false} dx={-10} tickFormatter={(value) => `₹${value / 1000}k`} />
+                          <Tooltip />
+                          <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
+                          <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
 
-          {/* Category Breakdown (Mobile) */}
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle>Spending by Category</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <PieAny
-                        data={categoryData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={4}
-                        dataKey="value"
-                      >
-                         {categoryData.map((entry: any, index: number) => (
-                           <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                         ))}
-                      </PieAny>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-        </div>
+                {/* Category Breakdown (Mobile) */}
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle>Spending by Category</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <PieAny
+                            activeIndex={activeIndex}
+                            activeShape={renderActiveShape}
+                            data={categoryData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={4}
+                            dataKey="value"
+                            onMouseEnter={onPieEnter}
+                            onClick={onPieEnter}
+                          >
+                            {categoryData.map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                            ))}
+                          </PieAny>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-        {/* Smart Analysis Section (Desktop Grid) */}
-        <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-900/20 border-indigo-100 dark:border-indigo-900">
-                <CardHeader className="pb-2">
+              {/* Smart Analysis Section (Desktop Grid) */}
+              <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-900/20 border-indigo-100 dark:border-indigo-900">
+                  <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4" /> 
-                        Spending Trend
+                      <TrendingUp className="h-4 w-4" />
+                      Spending Trend
                     </CardTitle>
-                </CardHeader>
-                <CardContent>
+                  </CardHeader>
+                  <CardContent>
                     <div className="text-lg font-semibold text-foreground">
-                        {trends}
+                      {trends}
                     </div>
-                </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
 
-            <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-900/20 border-purple-100 dark:border-purple-900">
-                <CardHeader className="pb-2">
+                <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-900/20 border-purple-100 dark:border-purple-900">
+                  <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-purple-600 dark:text-purple-400 flex items-center gap-2">
-                        <Brain className="h-4 w-4" /> 
-                        Smart Forecast
+                      <Brain className="h-4 w-4" />
+                      Smart Forecast
                     </CardTitle>
-                </CardHeader>
-                <CardContent>
+                  </CardHeader>
+                  <CardContent>
                     <div className="text-2xl font-bold text-foreground">
-                        ₹{forecast.toLocaleString('en-IN')}
+                      ₹{forecast.toLocaleString('en-IN')}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                        Projected end-of-month expense
+                      Projected end-of-month expense
                     </p>
-                </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
 
-            <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-900/20 border-amber-100 dark:border-amber-900">
-                <CardHeader className="pb-2">
+                <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-900/20 border-amber-100 dark:border-amber-900">
+                  <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                        <Brain className="h-4 w-4" /> 
-                        AI Insight
+                      <Brain className="h-4 w-4" />
+                      AI Insight
                     </CardTitle>
-                </CardHeader>
-                <CardContent>
+                  </CardHeader>
+                  <CardContent>
                     {anomalies.length > 0 ? (
-                        <div className="text-sm font-medium text-foreground">
-                            {anomalies[0]}
-                        </div>
+                      <div className="text-sm font-medium text-foreground">
+                        {anomalies[0]}
+                      </div>
                     ) : (
-                        <div className="text-sm text-muted-foreground">
-                            Your spending patterns look normal this month.
-                        </div>
+                      <div className="text-sm text-muted-foreground">
+                        Your spending patterns look normal this month.
+                      </div>
                     )}
-                </CardContent>
-            </Card>
-        </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-        {/* Smart Analysis Section (Mobile Carousel) */}
-        <div className="md:hidden mb-6 space-y-2">
-          <h3 className="font-semibold text-lg px-1">AI Insights</h3>
-          <Carousel className="w-full relative px-2">
-            <CarouselContent>
-               <CarouselItem>
-                  <Card className="h-full bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-900/20 border-indigo-100 dark:border-indigo-900">
-                      <CardHeader className="pb-2">
+              {/* Smart Analysis Section (Mobile Carousel) */}
+              <div className="md:hidden mb-6 space-y-2">
+                <h3 className="font-semibold text-lg px-1">AI Insights</h3>
+                <Carousel className="w-full relative px-2">
+                  <CarouselContent>
+                    <CarouselItem>
+                      <Card className="h-full bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-900/20 border-indigo-100 dark:border-indigo-900">
+                        <CardHeader className="pb-2">
                           <CardTitle className="text-sm font-medium text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
-                              <TrendingUp className="h-4 w-4" /> 
-                              Spending Trend
+                            <TrendingUp className="h-4 w-4" />
+                            Spending Trend
                           </CardTitle>
-                      </CardHeader>
-                      <CardContent>
+                        </CardHeader>
+                        <CardContent>
                           <div className="text-lg font-semibold text-foreground">
-                              {trends}
+                            {trends}
                           </div>
-                      </CardContent>
-                  </Card>
-               </CarouselItem>
-               <CarouselItem>
-                   <Card className="h-full bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-900/20 border-purple-100 dark:border-purple-900">
-                      <CardHeader className="pb-2">
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                    <CarouselItem>
+                      <Card className="h-full bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-900/20 border-purple-100 dark:border-purple-900">
+                        <CardHeader className="pb-2">
                           <CardTitle className="text-sm font-medium text-purple-600 dark:text-purple-400 flex items-center gap-2">
-                              <Brain className="h-4 w-4" /> 
-                              Smart Forecast
+                            <Brain className="h-4 w-4" />
+                            Smart Forecast
                           </CardTitle>
-                      </CardHeader>
-                      <CardContent>
+                        </CardHeader>
+                        <CardContent>
                           <div className="text-2xl font-bold text-foreground">
-                              ₹{forecast.toLocaleString('en-IN')}
+                            ₹{forecast.toLocaleString('en-IN')}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                              Projected end-of-month expense
+                            Projected end-of-month expense
                           </p>
-                      </CardContent>
-                  </Card>
-               </CarouselItem>
-               <CarouselItem>
-                   <Card className="h-full bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-900/20 border-amber-100 dark:border-amber-900">
-                      <CardHeader className="pb-2">
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                    <CarouselItem>
+                      <Card className="h-full bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-900/20 border-amber-100 dark:border-amber-900">
+                        <CardHeader className="pb-2">
                           <CardTitle className="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                              <Brain className="h-4 w-4" /> 
-                              AI Insight
+                            <Brain className="h-4 w-4" />
+                            AI Insight
                           </CardTitle>
-                      </CardHeader>
-                      <CardContent>
+                        </CardHeader>
+                        <CardContent>
                           {anomalies.length > 0 ? (
-                              <div className="text-sm font-medium text-foreground">
-                                  {anomalies[0]}
-                              </div>
+                            <div className="text-sm font-medium text-foreground">
+                              {anomalies[0]}
+                            </div>
                           ) : (
-                              <div className="text-sm text-muted-foreground">
-                                  Your spending patterns look normal this month.
-                              </div>
+                            <div className="text-sm text-muted-foreground">
+                              Your spending patterns look normal this month.
+                            </div>
                           )}
-                      </CardContent>
-                  </Card>
-               </CarouselItem>
-            </CarouselContent>
-            <div className="flex justify-between absolute top-1/2 -translate-y-1/2 left-0 right-0 pointer-events-none px-1">
-               <CarouselPrevious className="pointer-events-auto relative left-0 translate-y-0 h-8 w-8" />
-               <CarouselNext className="pointer-events-auto relative right-0 translate-y-0 h-8 w-8" />
-            </div>
-          </Carousel>
-        </div>
-
-        {/* Deep Insights */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-           <Card>
-              <CardHeader className="pb-2">
-                 <CardTitle className="text-sm font-medium text-muted-foreground">Top Spending Category</CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <div className="text-2xl font-bold text-primary">
-                    {categoryData.length > 0 
-                      ? categoryData.reduce((prev: any, current: any) => (prev.value > current.value) ? prev : current).name 
-                      : "N/A"}
-                 </div>
-                 <p className="text-xs text-muted-foreground mt-1">
-                    Highest expense category
-                 </p>
-              </CardContent>
-           </Card>
-
-           <Card>
-              <CardHeader className="pb-2">
-                 <CardTitle className="text-sm font-medium text-muted-foreground">Largest Single Expense</CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <div className="text-2xl font-bold truncate text-red-500">
-                    {transactions.filter(t => t.type === 'expense').length > 0
-                      ? transactions.filter(t => t.type === 'expense').reduce((max, t) => Math.abs(t.amount) > Math.abs(max.amount) ? t : max).name
-                      : "N/A"}
-                 </div>
-                 <p className="text-xs text-muted-foreground mt-1">
-                   {transactions.filter(t => t.type === 'expense').length > 0
-                      ? `₹${Math.abs(transactions.filter(t => t.type === 'expense').reduce((max, t) => Math.abs(t.amount) > Math.abs(max.amount) ? t : max).amount).toLocaleString('en-IN')}`
-                      : "No expenses recorded"}
-                 </p>
-              </CardContent>
-           </Card>
-
-            <Card className="glass-card">
-              <CardHeader className="pb-2">
-                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <div className="text-2xl font-bold">
-                    {transactions.length}
-                 </div>
-                 <p className="text-xs text-muted-foreground mt-1">
-                    Total transactions recorded
-                 </p>
-              </CardContent>
-           </Card>
-        </div>
-
-        {/* Recent Transactions */}
-        <motion.div variants={itemVariants}>
-          <Card className="glass-card">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Recent Transactions</CardTitle>
-                <CardDescription>Your latest financial activities</CardDescription>
-              </div>
-              <Select value={selectedMonth} onValueChange={(val) => { setSelectedMonth(val); setCurrentPage(1); }}>
-                <SelectTrigger className="w-[180px] bg-background/50">
-                  <SelectValue placeholder="Filter by Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Months</SelectItem>
-                  {availableMonths.map(month => (
-                    <SelectItem key={month} value={month}>{month}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {paginatedTransactions.map((transaction, index) => (
-                  <motion.div
-                    key={transaction._id || transaction.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors gap-3 border border-transparent hover:border-border/50 group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div
-                        className={`h-9 w-9 md:h-10 md:w-10 flex-shrink-0 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 ${
-                          transaction.amount > 0 ? "bg-green-100 dark:bg-green-900/20" : "bg-red-100 dark:bg-red-900/20"
-                        }`}
-                      >
-                        {transaction.amount > 0 ? (
-                          <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
-                        ) : (
-                          <ArrowUpRight className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm md:text-base truncate group-hover:text-primary transition-colors">{transaction.name}</p>
-                        <p className="text-xs md:text-sm text-muted-foreground truncate">
-                          {transaction.category} • {formatDateDisplay(transaction.date)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`text-base md:text-lg font-semibold flex-shrink-0 ${
-                          transaction.amount > 0 ? "text-green-600" : "text-red-600"
-                        }`}
-                      >
-                        {transaction.amount > 0 ? "+" : ""}
-                        ₹{Math.abs(transaction.amount).toLocaleString('en-IN')}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteTransaction(transaction._id)}
-                        className="h-8 w-8 text-muted-foreground hover:text-red-600 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
-                {paginatedTransactions.length === 0 && (
-                  <div className="text-center text-muted-foreground py-8">
-                    No transactions found for this period.
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  </CarouselContent>
+                  <div className="flex justify-between absolute top-1/2 -translate-y-1/2 left-0 right-0 pointer-events-none px-1">
+                    <CarouselPrevious className="pointer-events-auto relative left-0 translate-y-0 h-8 w-8" />
+                    <CarouselNext className="pointer-events-auto relative right-0 translate-y-0 h-8 w-8" />
                   </div>
-                )}
+                </Carousel>
               </div>
 
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4 border-t mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="hover:bg-primary/5"
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
-                  </Button>
-                  <span className="text-sm text-muted-foreground font-medium">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="hover:bg-primary/5"
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-          </motion.div>
-        )}
-      
-      {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t p-2 flex justify-around items-center z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-          <Button variant="ghost" className={`flex-col h-auto py-2 gap-1 rounded-xl ${viewMode === 'dashboard' ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`} onClick={() => setViewMode('dashboard')}>
-             <LayoutDashboard className="h-5 w-5" />
-             <span className="text-[10px] font-medium">Home</span>
-          </Button>
-          <Button variant="ghost" className={`flex-col h-auto py-2 gap-1 rounded-xl ${viewMode === 'calendar' ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`} onClick={() => setViewMode('calendar')}>
-             <CalendarIcon className="h-5 w-5" />
-             <span className="text-[10px] font-medium">Calendar</span>
-          </Button>
-          <div className="-mt-8">
-             <Button className="rounded-full h-14 w-14 shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground border-4 border-background" onClick={() => setOpen(true)}>
-                <Plus className="h-6 w-6" />
-             </Button>
-          </div>
-          <Button variant="ghost" className="flex-col h-auto py-2 gap-1 text-muted-foreground rounded-xl" onClick={() => document.getElementById('scan-receipt')?.click()}>
-             <Camera className="h-5 w-5" />
-             <span className="text-[10px] font-medium">Scan</span>
-          </Button>
-          <Button variant="ghost" className="flex-col h-auto py-2 gap-1 text-muted-foreground rounded-xl" onClick={() => setIsSettingsOpen(true)}>
-             <Settings className="h-5 w-5" />
-             <span className="text-[10px] font-medium">Settings</span>
-          </Button>
-      </div>
+              {/* Deep Insights */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Top Spending Category</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-primary">
+                      {categoryData.length > 0
+                        ? categoryData.reduce((prev: any, current: any) => (prev.value > current.value) ? prev : current).name
+                        : "N/A"}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Highest expense category
+                    </p>
+                  </CardContent>
+                </Card>
 
-       </div> {/* End of Content Div */}
-    </main>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Largest Single Expense</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold truncate text-red-500">
+                      {transactions.filter(t => t.type === 'expense').length > 0
+                        ? transactions.filter(t => t.type === 'expense').reduce((max, t) => Math.abs(t.amount) > Math.abs(max.amount) ? t : max).name
+                        : "N/A"}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {transactions.filter(t => t.type === 'expense').length > 0
+                        ? `₹${Math.abs(transactions.filter(t => t.type === 'expense').reduce((max, t) => Math.abs(t.amount) > Math.abs(max.amount) ? t : max).amount).toLocaleString('en-IN')}`
+                        : "No expenses recorded"}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="glass-card">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Activity</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {transactions.length}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Total transactions recorded
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recent Transactions */}
+              <motion.div variants={itemVariants}>
+                <Card className="glass-card">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Recent Transactions</CardTitle>
+                      <CardDescription>Your latest financial activities</CardDescription>
+                    </div>
+                    <Select value={selectedMonth} onValueChange={(val) => { setSelectedMonth(val); setCurrentPage(1); }}>
+                      <SelectTrigger className="w-[180px] bg-background/50">
+                        <SelectValue placeholder="Filter by Month" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Months</SelectItem>
+                        {availableMonths.map(month => (
+                          <SelectItem key={month} value={month}>{month}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {paginatedTransactions.map((transaction, index) => (
+                        <motion.div
+                          key={transaction._id || transaction.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors gap-3 border border-transparent hover:border-border/50 group"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div
+                              className={`h-9 w-9 md:h-10 md:w-10 flex-shrink-0 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 ${transaction.amount > 0 ? "bg-green-100 dark:bg-green-900/20" : "bg-red-100 dark:bg-red-900/20"
+                                }`}
+                            >
+                              {transaction.amount > 0 ? (
+                                <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
+                              ) : (
+                                <ArrowUpRight className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-sm md:text-base truncate group-hover:text-primary transition-colors">{transaction.name}</p>
+                              <p className="text-xs md:text-sm text-muted-foreground truncate">
+                                {transaction.category} • {formatDateDisplay(transaction.date)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div
+                              className={`text-base md:text-lg font-semibold flex-shrink-0 ${transaction.amount > 0 ? "text-green-600" : "text-red-600"
+                                }`}
+                            >
+                              {transaction.amount > 0 ? "+" : ""}
+                              ₹{Math.abs(transaction.amount).toLocaleString('en-IN')}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteTransaction(transaction._id)}
+                              className="h-8 w-8 text-muted-foreground hover:text-red-600 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </motion.div>
+                      ))}
+                      {paginatedTransactions.length === 0 && (
+                        <div className="text-center text-muted-foreground py-8">
+                          No transactions found for this period.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between pt-4 border-t mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="hover:bg-primary/5"
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-1" />
+                          Previous
+                        </Button>
+                        <span className="text-sm text-muted-foreground font-medium">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="hover:bg-primary/5"
+                        >
+                          Next
+                          <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </motion.div>
+          )}
+
+          <input
+            type="file"
+            id="scan-receipt"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                alert("Receipt scanning feature coming soon!");
+              }
+            }}
+          />
+
+          {/* Mobile Bottom Navigation */}
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t p-2 flex justify-around items-center z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+            <Button variant="ghost" className={`flex-col h-auto py-2 gap-1 rounded-xl ${viewMode === 'dashboard' ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`} onClick={() => setViewMode('dashboard')}>
+              <LayoutDashboard className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Home</span>
+            </Button>
+            <Button variant="ghost" className={`flex-col h-auto py-2 gap-1 rounded-xl ${viewMode === 'calendar' ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`} onClick={() => setViewMode('calendar')}>
+              <CalendarIcon className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Calendar</span>
+            </Button>
+            <div className="-mt-8">
+              <Button className="rounded-full h-14 w-14 shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground border-4 border-background" onClick={() => setOpen(true)}>
+                <Plus className="h-6 w-6" />
+              </Button>
+            </div>
+            <Button variant="ghost" className="flex-col h-auto py-2 gap-1 text-muted-foreground rounded-xl" onClick={() => document.getElementById('scan-receipt')?.click()}>
+              <Camera className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Scan</span>
+            </Button>
+            <Button variant="ghost" className="flex-col h-auto py-2 gap-1 text-muted-foreground rounded-xl" onClick={() => setIsSettingsOpen(true)}>
+              <Settings className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Settings</span>
+            </Button>
+          </div>
+
+        </div> {/* End of Content Div */}
+      </main>
     </div>
   );
 }
